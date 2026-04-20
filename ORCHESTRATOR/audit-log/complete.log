@@ -1,0 +1,4 @@
+[2026-04-20T23:20:11Z] ORCHESTRATOR | INIT | Orchestrator configuration loaded
+[2026-04-20T23:20:12Z] ORCHESTRATOR | CONFIG | Mode: multi_pathway, Pathways: 3, Slack integration: enabled
+[2026-04-20T23:20:13Z] ORCHESTRATOR | READY | Awaiting service execution
+[2026-04-20T23:20:13Z] ORCHESTRATOR | PATHWAYS_LOADED | revrace-primary (priority:1, critical), brain-management (priority:2, non-critical), mfg-itar (priority:1, critical, ITAR-sensitive)

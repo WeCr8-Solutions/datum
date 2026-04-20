@@ -1,0 +1,106 @@
+{
+  "orchestrator_version": "1.0",
+  "created_at": "2026-04-20T23:20:11Z",
+  "updated_at": "2026-04-20T23:20:11Z",
+  "mode": "multi_pathway",
+  "pathways": [
+    {
+      "id": "revrace-primary",
+      "name": "RevRaceApp v1.0 Documentation & Code",
+      "root": "C:\\Users\\zach\\Documents\\Projects\\RevRaceApp",
+      "domain": "racing_app",
+      "enabled": true,
+      "monitor": true,
+      "critical": true,
+      "require_approval": true,
+      "services": [
+        "FORGE",
+        "ANVIL",
+        "PANEL"
+      ],
+      "schedule": "hourly",
+      "priority": 1,
+      "last_run": "2026-04-20T23:20:11Z",
+      "next_run": "2026-04-21T00:20:11Z",
+      "include_patterns": [
+        "*.md",
+        "docs/**/*.md",
+        "src/**/*.tsx",
+        "src/**/*.ts"
+      ],
+      "exclude_patterns": [
+        "node_modules/**",
+        ".git/**",
+        "build/**",
+        "dist/**"
+      ]
+    },
+    {
+      "id": "brain-management",
+      "name": "Second-Brain Documentation Index",
+      "root": "C:\\Users\\zach\\.openclaw\\workspace\\second-brain",
+      "domain": "knowledge_management",
+      "enabled": true,
+      "monitor": true,
+      "critical": false,
+      "require_approval": false,
+      "services": [
+        "FORGE",
+        "BRAIN_LINKER",
+        "TAG_ENGINE"
+      ],
+      "schedule": "daily",
+      "priority": 2,
+      "last_run": "2026-04-20T23:20:11Z",
+      "next_run": "2026-04-21T23:20:11Z",
+      "include_patterns": [
+        "*.md",
+        "inbox/**/*.md",
+        "notes/**/*.md"
+      ],
+      "exclude_patterns": [
+        ".obsidian/**",
+        ".trash/**"
+      ]
+    },
+    {
+      "id": "mfg-itar",
+      "name": "Manufacturing Documentation (ITAR-Sensitive)",
+      "root": "C:\\Users\\zach\\.openclaw\\workspace\\datum\\second-brain",
+      "domain": "manufacturing",
+      "enabled": true,
+      "monitor": true,
+      "critical": true,
+      "require_approval": true,
+      "itar_sensitive": true,
+      "services": [
+        "FORGE",
+        "COMPLIANCE_CHECK",
+        "ITAR_VALIDATOR"
+      ],
+      "schedule": "every_4h",
+      "priority": 1,
+      "last_run": "2026-04-20T23:20:11Z",
+      "next_run": "2026-04-21T03:20:11Z",
+      "include_patterns": [
+        "*.md",
+        "manufacturing/**",
+        "README.md"
+      ],
+      "exclude_patterns": [
+        ".git/**",
+        ".backup/**"
+      ]
+    }
+  ],
+  "global_settings": {
+    "slack_integration": true,
+    "slack_channel": "#damp",
+    "slack_mention": "@Zach",
+    "approval_buttons": true,
+    "audit_logging": true,
+    "centralized_output": "C:\\Users\\zach\\.openclaw\\workspace\\datum\\ORCHESTRATOR",
+    "auto_approve_threshold": 0.95,
+    "decision_timeout_minutes": 480
+  }
+}

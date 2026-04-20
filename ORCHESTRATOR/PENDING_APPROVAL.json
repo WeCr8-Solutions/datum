@@ -1,0 +1,6 @@
+{
+  "queue_timestamp": "2026-04-20T23:20:11Z",
+  "total_pending": 0,
+  "decisions": [],
+  "notes": "This queue is populated by DATUM services when issues require human approval. Each decision includes context, impact analysis, and recommended action. Decisions are logged to decisions/ directory with full audit trail."
+}

@@ -1,0 +1,13 @@
+{
+  "total_decisions": 0,
+  "approved": 0,
+  "denied": 0,
+  "pending": 0,
+  "average_decision_time_minutes": 0,
+  "decisions": [],
+  "metadata": {
+    "created_at": "2026-04-20T23:20:11Z",
+    "tracking_since": "2026-04-20T23:20:11Z",
+    "decision_log_format": "Each decision is also stored individually in decisions/ directory with full context and audit trail"
+  }
+}

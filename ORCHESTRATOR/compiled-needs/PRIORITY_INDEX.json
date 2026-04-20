@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-04-20T23:20:11Z",
+  "total_needs": 0,
+  "by_severity": {
+    "CRITICAL": {
+      "count": 0,
+      "issues": []
+    },
+    "HIGH": {
+      "count": 0,
+      "issues": []
+    },
+    "MEDIUM": {
+      "count": 0,
+      "issues": []
+    },
+    "LOW": {
+      "count": 0,
+      "issues": []
+    }
+  },
+  "by_pathway": {
+    "revrace-primary": {
+      "needs": 0,
+      "critical": 0,
+      "pending_approval": 0
+    },
+    "brain-management": {
+      "needs": 0,
+      "critical": 0,
+      "pending_approval": 0
+    },
+    "mfg-itar": {
+      "needs": 0,
+      "critical": 0,
+      "pending_approval": 0
+    }
+  },
+  "last_updated": "2026-04-20T23:20:11Z",
+  "next_update": "2026-04-21T00:20:11Z"
+}
