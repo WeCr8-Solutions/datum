@@ -1,0 +1,53 @@
+# ── Environment ───────────────────────────────────────────
+.env
+.env.local
+
+# ── Python ────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+dist/
+*.egg-info/
+
+# ── Runtime state (generated — do not commit) ─────────────
+forge/forge_state.json
+forge/forge_tasks.db
+anvil/anvil_state.json
+anvil/anvil_tasks.db
+panel/panel_decisions.json
+panel/panel_notified.json
+panel/panel_features.json
+
+# ── Logs ──────────────────────────────────────────────────
+logs/
+*.log
+forge/logs/
+anvil/logs/
+
+# ── Staging / processed (client files — never commit) ─────
+forge/staging/
+forge/processed/
+forge/data/
+
+# ── Review queues (sensitive — never commit) ──────────────
+forge/review_queue/
+anvil/review_queue/
+
+# ── Reports (generated) ───────────────────────────────────
+forge/reports/
+anvil/reports/
+panel/reports/
+
+# ── Agent memory (client-specific learned patterns) ───────
+forge/memory/
+
+# ── Temp ──────────────────────────────────────────────────
+forge/tmp/
+anvil/tmp/
+*.tmp
+
+# ── OS ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

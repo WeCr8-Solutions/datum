@@ -1,0 +1,286 @@
+# ============================================================
+# FORGE Domain: Racing App / RevRace / RevShocks
+# React Native off-road racing and shock tuning application
+# ============================================================
+
+domain:
+  id: "racing_app"
+  name: "Racing App Documentation"
+  aliases:
+    - "revrace"
+    - "revshocks"
+    - "racing"
+    - "shock tuning"
+    - "off-road"
+    - "rev race"
+
+detection:
+  keywords:
+    strong:
+      - "RevRace"
+      - "RevShocks"
+      - "shock tuning"
+      - "race tracking"
+      - "off-road"
+      - "shock adjuster"
+      - "bypass shock"
+      - "coilover"
+      - "race event"
+      - "expo-router"
+      - "revrace-app"
+    weak:
+      - "firebase"
+      - "expo"
+      - "React Native"
+      - "garage"
+      - "vehicle"
+      - "tuning"
+      - "suspension"
+      - "terrain"
+      - "lap time"
+      - "race series"
+      - "subscription"
+      - "stripe"
+      - "capacitor"
+  path_patterns:
+    - "*/RevRaceApp*/**/*.md"
+    - "*/revrace*/**/*.md"
+    - "*SHOCK*"
+    - "*RACE*"
+    - "*GARAGE*"
+    - "*REVSHOCK*"
+    - "*DEPLOY*"
+    - "*FIREBASE*"
+    - "*AUTH*"
+    - "*GOOGLE*"
+    - "*DEBUGGING*"
+    - "*DEVELOPER*"
+    - "*TESTING*"
+    - "*VEHICLE*"
+    - "*STRIPE*"
+    - "*SUBSCRIPTION*"
+    - "*EXPO*"
+    - "*CAPACITOR*"
+
+document_types:
+  implementation_report:
+    name: "Implementation / Status Report"
+    required_sections:
+      - "Summary"
+      - "Changes"
+      - "Status"
+    style_guide: "technical_report"
+
+  deployment_guide:
+    name: "Deployment Guide"
+    required_sections:
+      - "Prerequisites"
+      - "Steps"
+      - "Verification"
+    style_guide: "ops_guide"
+
+  feature_spec:
+    name: "Feature Specification"
+    required_sections:
+      - "Overview"
+      - "Implementation"
+      - "Testing"
+    style_guide: "technical_spec"
+
+  developer_guide:
+    name: "Developer Guide"
+    required_sections:
+      - "Setup"
+      - "Architecture"
+      - "Usage"
+    style_guide: "developer_docs"
+
+  testing_guide:
+    name: "Testing Guide"
+    required_sections:
+      - "Test Cases"
+      - "Expected Results"
+    style_guide: "testing_docs"
+
+  api_reference:
+    name: "API / Firebase Reference"
+    required_sections:
+      - "Endpoint"
+      - "Parameters"
+      - "Response"
+    style_guide: "api_docs"
+
+verification_rules:
+
+  accuracy:
+    - id: "stale_completion_claim"
+      description: "Document claims '100% complete' or 'fully implemented' — verify code evidence supports this"
+      severity: "warning"
+      trigger_keywords:
+        - "100% complete"
+        - "fully implemented"
+        - "complete and working"
+        - "successfully implemented"
+        - "FINAL"
+        - "production ready"
+      required_content:
+        - "commit"
+        - "test"
+        - "verified"
+        - "deployed"
+
+    - id: "version_specificity"
+      description: "Version numbers mentioned should be specific and match package.json"
+      severity: "warning"
+      pattern: "(expo|react|firebase|typescript)\\s*[@:]\\s*\\d"
+
+    - id: "env_var_documented"
+      description: "Documents referencing environment variables should list required keys"
+      severity: "warning"
+      trigger_keywords:
+        - "environment variable"
+        - "env file"
+        - ".env"
+        - "API key"
+        - "firebase config"
+      required_content:
+        - "EXPO_"
+        - "FIREBASE_"
+        - "API_KEY"
+        - "process.env"
+
+    - id: "no_conflicting_status"
+      description: "Document should not have contradictory status statements (e.g., both 'working' and 'broken')"
+      severity: "warning"
+
+  format:
+    - id: "code_blocks_for_commands"
+      description: "Shell commands and code samples should be in fenced code blocks"
+      severity: "warning"
+      trigger_keywords:
+        - "npm run"
+        - "npx"
+        - "expo"
+        - "firebase deploy"
+        - "git "
+      required_content:
+        - "```"
+
+    - id: "dated_report"
+      description: "Status/implementation reports should include a date"
+      severity: "info"
+      trigger_keywords:
+        - "REPORT"
+        - "SUMMARY"
+        - "STATUS"
+        - "COMPLETE"
+      required_content:
+        - "2024"
+        - "2025"
+        - "2026"
+        - "Date:"
+        - "date:"
+
+    - id: "no_placeholder_text"
+      description: "Document should not contain TODO/FIXME/placeholder markers in final state"
+      severity: "warning"
+      required: []   # checked separately in cross_ref
+
+  cross_ref:
+    - id: "file_refs_valid"
+      description: "File paths referenced in document should exist in the repository"
+      severity: "error"
+
+    - id: "components_exist"
+      description: "Component and hook names referenced should exist in codebase"
+      severity: "warning"
+
+    - id: "package_versions_match"
+      description: "Package versions cited should match package.json"
+      severity: "warning"
+
+    - id: "no_stale_todos_in_done_docs"
+      description: "Documents claiming completion should not reference unresolved TODOs in code"
+      severity: "warning"
+
+web_verification:
+  verify_topics:
+    - "Expo SDK 53 changelog"
+    - "Firebase Auth React Native setup"
+    - "expo-router v5 documentation"
+    - "React Native 0.79 breaking changes"
+    - "Stripe React Native SDK"
+    - "Capacitor iOS Android setup"
+  trusted_sources:
+    - "docs.expo.dev"
+    - "firebase.google.com"
+    - "reactnative.dev"
+    - "stripe.com/docs"
+    - "capacitorjs.com"
+    - "rnfirebase.io"
+
+style:
+  technical_report:
+    voice: "past_tense"
+    technical_level: "intermediate"
+    use_numbered_steps: false
+    include_date: true
+
+  ops_guide:
+    voice: "imperative"
+    technical_level: "intermediate"
+    use_numbered_steps: true
+    use_code_blocks: true
+
+  technical_spec:
+    voice: "descriptive"
+    technical_level: "advanced"
+    use_numbered_steps: false
+
+  developer_docs:
+    voice: "imperative"
+    technical_level: "advanced"
+    use_numbered_steps: true
+    use_code_blocks: true
+
+  api_docs:
+    voice: "descriptive"
+    technical_level: "advanced"
+    use_tables: true
+
+repair_prompts:
+  base: |
+    You are a senior technical writer for a React Native mobile app team building
+    RevRace — an off-road racing and shock tuning platform using Expo, Firebase, and Stripe.
+
+    The codebase uses: Expo ~53, expo-router v5, React Native, Firebase Auth/Firestore/Storage,
+    Stripe subscriptions, Capacitor for native builds, and TypeScript throughout.
+
+    Key features: shock tuning (RevShocks bypass/coilover adjusters), race event tracking,
+    vehicle garage, GPS race tracking, user subscriptions, admin dashboard.
+
+    ALWAYS:
+    - Mark outdated claims with [OUTDATED: {reason}] rather than deleting
+    - Preserve technical specifics (component names, file paths, function names)
+    - Wrap shell commands in ``` code blocks
+    - Note when a claim conflicts with cross-reference findings using [VERIFY: {claim}]
+    - Keep implementation reports as historical records — don't make them sound current
+    - Flag contradictions between "complete" status and missing code evidence
+
+    NEVER:
+    - Invent file paths, component names, or API endpoints
+    - Change version numbers without evidence from package.json
+    - Remove warnings, caveats, or known issues sections
+    - Claim features are complete if cross-reference found no implementation
+
+  implementation_report_repair: |
+    You are updating a RevRace implementation/status report.
+    These documents are historical records. Mark stale claims with [OUTDATED] tags.
+    Add a "Cross-Reference Status" section noting which file paths were verified vs. missing.
+    Do not rewrite — annotate.
+
+  deployment_guide_repair: |
+    You are updating a RevRace deployment guide.
+    Verify all commands work with Expo SDK 53 and expo-router v5.
+    Update any deprecated CLI commands. Add prerequisite versions at the top.
+    Wrap all commands in code blocks.

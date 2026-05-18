@@ -1,0 +1,33 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Runtime outputs (mounted as named volumes)
+forge/logs/
+forge/staging/
+forge/processed/
+forge/reports/
+forge/review_queue/
+forge/memory/
+anvil/logs/
+anvil/review_queue/
+logs/
+
+# Secrets
+.env
+*.key
+*.pem
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

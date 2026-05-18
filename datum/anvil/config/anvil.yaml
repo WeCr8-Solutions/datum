@@ -1,0 +1,177 @@
+# ============================================================
+# ANVIL — Automated Node for Verifying Implementation against Literature
+# Master Configuration
+# Companion to FORGE — reads FORGE docs as the source of truth.
+# ============================================================
+
+system:
+  name: "ANVIL"
+  version: "1.0.0"
+  description: "Doc-driven code verification and repair agent"
+  log_level: "INFO"
+  log_dir: "./logs"
+  state_file: "./anvil_state.json"
+  tasks_db: "./anvil_tasks.db"
+
+# ── Scheduler ─────────────────────────────────────────────────────────────
+scheduler:
+  enabled: true
+  # How often each stage runs (cron-style or interval seconds)
+  scan_interval_seconds:   3600    # Re-scan code for changes: hourly
+  audit_interval_seconds:  7200    # Full doc-vs-code audit: every 2 hours
+  patch_interval_seconds:  14400   # Apply approved patches: every 4 hours
+  run_on_start: true
+  dry_run: false                   # Analyze only, never write code changes
+  max_concurrent_files: 4
+
+# ── FORGE integration ──────────────────────────────────────────────────────
+forge:
+  # Where to read verified docs from
+  docs_path: "../forge/docs"       # Path to FORGE-managed document directory
+  state_file: "../forge/forge_state.json"  # Read FORGE quality scores
+  ledger_file: "../forge/logs/decisions.ndjson"  # Read FORGE decisions
+  memory_dir: "../forge/memory"    # Shared agent memory
+  min_doc_quality_score: 70        # Only use docs FORGE scored ≥ this as specs
+  watch_for_doc_changes: true      # Re-audit code when FORGE updates a doc
+
+# ── Code repositories ──────────────────────────────────────────────────────
+repositories:
+  # Configure one or more repos to audit
+  # Each repo can be in the same directory or a remote path
+  - id: "wecr8-rag"
+    name: "WeCr8 RAG Engine"
+    path: "../wecr8-rag"           # Relative or absolute path to code root
+    branch: "main"
+    auto_pull: true
+    languages: ["python", "typescript"]
+    doc_binding:                   # Which doc domains map to this repo
+      - domain: "manufacturing"
+        doc_patterns: ["**/sop*", "**/setup*", "**/quality*"]
+      - domain: "general"
+        doc_patterns: ["**/*.md"]
+    exclude_patterns:
+      - "node_modules/**"
+      - ".git/**"
+      - "dist/**"
+      - "__pycache__/**"
+      - "*.min.js"
+      - "*.lock"
+
+  - id: "wecr8-portal"
+    name: "WeCr8 Portal"
+    path: "../wecr8-portal"
+    branch: "main"
+    auto_pull: true
+    languages: ["javascript", "html"]
+    doc_binding:
+      - domain: "general"
+        doc_patterns: ["**/*.md"]
+
+# ── AI provider (mirrors FORGE config — local-first) ──────────────────────
+ai:
+  primary:
+    provider: "ollama"
+    base_url: "http://host.docker.internal:11434"
+    models:
+      reasoning:  "llama3.2:latest"         # Code analysis and patch generation
+      fast:       "phi3:mini"               # Quick classification and binding
+      embedding:  "nomic-embed-text:latest"
+    timeout_seconds: 180           # Code tasks need more time than doc tasks
+    max_retries: 3
+    context_window: 8000           # Max tokens to send per request
+
+  fallback:
+    provider: "anthropic"
+    api_key_env: "ANTHROPIC_API_KEY"
+    model: "claude-sonnet-4-5"
+    enabled: true
+    use_for:
+      - "complex_patch"            # Multi-file patches
+      - "security_review"          # Security-related code changes
+      - "test_generation"          # Generating tests for patched code
+
+  web_search:
+    enabled: true
+    provider: "duckduckgo"
+    disabled_for_itar: true
+
+# ── Audit configuration ────────────────────────────────────────────────────
+audit:
+  # Minimum similarity score (0-1) to consider a doc-code binding valid
+  binding_threshold: 0.65
+
+  # Severity levels for issues
+  severity_levels:
+    contradiction:   "error"       # Code does X, doc says Y → must fix
+    missing_impl:    "warning"     # Doc says feature exists, no code found
+    drift:           "info"        # Doc updated since code was last verified
+
+  # Issue scoring — how bad is each type
+  score_weights:
+    contradiction:   1.0
+    missing_impl:    0.6
+    drift:           0.3
+
+  # Skip audit for these (too noisy or not meaningful to audit)
+  skip_file_patterns:
+    - "**/*test*"
+    - "**/*spec*"
+    - "**/*.min.*"
+    - "**/migrations/**"
+
+  # Maximum file size to audit (larger files chunked)
+  max_file_chars: 15000
+  chunk_overlap_chars: 500
+
+# ── Patch configuration ────────────────────────────────────────────────────
+patch:
+  # ANVIL will NEVER auto-patch these — always requires human review
+  always_review_patterns:
+    - "**/*auth*"
+    - "**/*security*"
+    - "**/*password*"
+    - "**/*crypto*"
+    - "**/*itar*"
+    - "**/*secret*"
+    - "**/*key*"
+
+  # Always review these file types regardless of change type
+  always_review_languages:
+    - "sql"                        # Schema changes are dangerous
+
+  # Max lines changed per patch (larger changes split or held for review)
+  max_lines_per_patch: 50
+
+  # Run syntax validation after patch before committing
+  validate_syntax: true
+
+  # Run tests after patch if a test runner is configured
+  run_tests_after_patch: false
+  test_command: ""                 # e.g., "npm test" or "pytest"
+  test_timeout_seconds: 120
+
+# ── Human review gate (inherits FORGE gate patterns) ──────────────────────
+human_review:
+  review_dir: "./review_queue"
+  require_review_for_severity: ["error"]    # Always review error-level patches
+  require_review_for_languages: ["sql"]
+  auto_approve_hours: 0                     # 0 = never auto-approve code changes
+  require_review_itar: true
+
+# ── Git settings ──────────────────────────────────────────────────────────
+git:
+  enabled: true
+  auto_commit: true
+  commit_message_prefix: "anvil:"
+  author_name: "ANVIL AI"
+  author_email: "anvil@wecr8.info"
+  push_after_commit: false
+  create_branch_for_patches: true  # Patch on feature branch, not main
+  branch_prefix: "anvil/fix-"
+
+# ── Reporting ──────────────────────────────────────────────────────────────
+reporting:
+  generate_run_report: true
+  report_dir: "./reports"
+  keep_last_n_reports: 30
+  notify_forge: true               # Write findings back to FORGE ledger

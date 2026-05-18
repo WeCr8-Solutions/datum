@@ -1,0 +1,100 @@
+# ============================================================
+# FORGE Domain: General / Universal
+# Fallback domain for any document type
+# ============================================================
+
+domain:
+  id: "general"
+  name: "General Documentation"
+  aliases: ["default", "universal", "any"]
+
+detection:
+  keywords:
+    strong: []  # Never auto-detected — always the fallback
+    weak: []
+  path_patterns: ["*"]
+
+document_types:
+  document:
+    name: "General Document"
+    required_sections:
+      - "Purpose"
+      - "Content"
+    required_metadata: []
+    style_guide: "general"
+
+  report:
+    name: "Report"
+    required_sections:
+      - "Executive Summary"
+      - "Findings"
+      - "Recommendations"
+    style_guide: "professional"
+
+  proposal:
+    name: "Proposal / Pitch"
+    required_sections:
+      - "Problem"
+      - "Solution"
+      - "Benefits"
+      - "Investment"
+      - "Next Steps"
+    style_guide: "professional"
+
+  training:
+    name: "Training Material"
+    required_sections:
+      - "Objectives"
+      - "Content"
+      - "Assessment"
+    style_guide: "training"
+
+verification_rules:
+  accuracy:
+    - id: "no_broken_links"
+      description: "URLs and references should be valid"
+      severity: "warning"
+
+    - id: "factual_claims"
+      description: "Specific factual claims (statistics, dates, names) should be verifiable"
+      severity: "warning"
+
+  format:
+    - id: "has_headers"
+      description: "Document should have clear section headers"
+      severity: "warning"
+
+    - id: "reasonable_length"
+      description: "Document should be substantive (min 200 words for most types)"
+      severity: "info"
+
+web_verification:
+  verify_topics: []
+  trusted_sources: []
+
+style:
+  general:
+    voice: "active"
+    technical_level: "intermediate"
+    use_numbered_steps: false
+
+  professional:
+    voice: "formal"
+    technical_level: "intermediate"
+
+repair_prompts:
+  base: |
+    You are an expert technical writer and editor. You improve documents for clarity,
+    completeness, accuracy, and professional quality.
+
+    ALWAYS:
+    - Preserve the author's intent and all factual content
+    - Improve clarity without changing meaning
+    - Fix grammar, spelling, and formatting issues
+    - Add missing structure (headers, sections) where appropriate
+    - Flag uncertain facts with [VERIFY] rather than guessing
+
+    NEVER:
+    - Change specific facts, numbers, or technical values without verification
+    - Remove content without a clear reason
+    - Change the fundamental purpose or audience of the document

@@ -1,0 +1,52 @@
+{
+  "documents": {
+    "README.md": {
+      "path": "README.md",
+      "domain": "manufacturing",
+      "doc_type": "sop",
+      "quality_score": 63,
+      "last_verified": "2026-04-18T19:36:35.470531",
+      "last_repaired": null,
+      "repair_attempts": 2,
+      "repair_history": [],
+      "verification_failures": [
+        {
+          "rule_id": "lockout_tagout",
+          "category": "safety",
+          "message": "Maintenance procedures must reference LOTO procedures",
+          "severity": "error"
+        }
+      ],
+      "git_hash": null,
+      "file_hash": "44c0fdd37b32277f",
+      "status": "pending",
+      "itar_sensitive": true,
+      "web_enriched": false
+    },
+    "requirements.txt": {
+      "path": "requirements.txt",
+      "domain": "general",
+      "doc_type": "document",
+      "quality_score": 85,
+      "last_verified": "2026-04-18T19:35:05.752555",
+      "last_repaired": null,
+      "repair_attempts": 0,
+      "repair_history": [],
+      "verification_failures": [],
+      "git_hash": null,
+      "file_hash": "b7cda5b85e3fd98a",
+      "status": "verified",
+      "itar_sensitive": false,
+      "web_enriched": false
+    }
+  },
+  "run_history": [],
+  "stats": {
+    "total_runs": 0,
+    "total_repairs": 0,
+    "total_verified": 0,
+    "avg_quality": 0,
+    "last_run": null
+  },
+  "saved_at": "2026-04-18T19:36:35.480470"
+}

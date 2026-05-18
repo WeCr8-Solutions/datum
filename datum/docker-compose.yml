@@ -1,0 +1,97 @@
+# ============================================================
+# DATUM — Docker Compose
+# FORGE · ANVIL · PANEL · WATCHER
+#
+# Commands:
+#   docker compose up -d          # Start everything
+#   docker compose logs -f panel  # Stream panel logs
+#   docker compose logs -f        # All logs
+#   docker compose down           # Stop everything
+#   docker compose restart forge  # Restart one service
+# ============================================================
+
+name: datum
+
+x-common: &common
+  build: .
+  env_file: .env
+  restart: unless-stopped
+  # Bind-mount source so code edits are live without rebuilding
+  volumes:
+    - .:/app
+    # Runtime data directories get named volumes for persistence + speed on Windows
+    - forge-staging:/app/forge/staging
+    - forge-processed:/app/forge/processed
+    - forge-review-queue:/app/forge/review_queue
+    - forge-memory:/app/forge/memory
+    - forge-logs:/app/forge/logs
+    - forge-reports:/app/forge/reports
+    - anvil-review-queue:/app/anvil/review_queue
+    - anvil-logs:/app/anvil/logs
+    - datum-logs:/app/logs
+  environment:
+    - PYTHONUNBUFFERED=1
+  extra_hosts:
+    # Let containers reach Ollama running on the Windows host
+    - "host.docker.internal:host-gateway"
+
+services:
+
+  # ── PANEL — Command center (the UI you open in your browser) ──────────────
+  panel:
+    <<: *common
+    command: >
+      python panel/server.py
+        --port 4000
+        --forge /app/forge
+        --anvil /app/anvil
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      - forge
+      - anvil
+
+  # ── FORGE — Document intelligence loop ────────────────────────────────────
+  forge:
+    <<: *common
+    command: >
+      python forge.py
+        --config /app/forge/config/forge.yaml
+        --path /app/forge
+    working_dir: /app/forge
+
+  # ── ANVIL — Code-vs-doc verification loop ─────────────────────────────────
+  anvil:
+    <<: *common
+    command: >
+      python anvil.py
+        --config /app/anvil/config/anvil.yaml
+    working_dir: /app/anvil
+
+  # ── WATCHER — Drop files into staging, FORGE picks them up ────────────────
+  watcher:
+    <<: *common
+    command: >
+      python watcher.py
+        --path /app/forge/staging
+        --config /app/forge/config/forge.yaml
+    working_dir: /app/forge
+    depends_on:
+      - forge
+
+volumes:
+  forge-staging:
+  forge-processed:
+  forge-review-queue:
+  forge-memory:
+  forge-logs:
+  forge-reports:
+  anvil-review-queue:
+  anvil-logs:
+  datum-logs:

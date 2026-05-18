@@ -1,0 +1,33 @@
+# WeCr8 Repository — Shared Python Requirements
+# Install once for all three systems: pip install -r requirements.txt
+
+# ── AI & LLM ──────────────────────────────────────────────
+anthropic>=0.24.0          # Claude fallback (optional — Ollama is primary)
+openai>=1.0.0              # OpenAI-compatible client (used by Ollama API wrapper)
+
+# ── HTTP & Async ──────────────────────────────────────────
+aiohttp>=3.9.0
+aiofiles>=23.2.0
+
+# ── Document Parsing ──────────────────────────────────────
+pypdf>=4.0.0               # FORGE: PDF text extraction (pure Python)
+mammoth>=1.7.2             # FORGE: Word document parsing
+openpyxl>=3.1.0            # FORGE: Excel parsing
+pytesseract>=0.3.10        # FORGE: OCR for scanned documents
+Pillow>=10.0.0             # Image processing
+
+# ── Git ───────────────────────────────────────────────────
+gitpython>=3.1.40          # FORGE + ANVIL: Git operations
+
+# ── Config & Validation ───────────────────────────────────
+pyyaml>=6.0.1              # Config file parsing
+python-dotenv>=1.0.0       # .env loading
+
+# ── CLI & UI ──────────────────────────────────────────────
+rich>=13.7.0               # Terminal output (FORGE + ANVIL CLIs)
+watchdog>=4.0.0            # FORGE: filesystem watcher
+
+# ── Utilities ─────────────────────────────────────────────
+tiktoken>=0.7.0            # Token counting
+python-jose>=3.3.0         # JWT for PANEL auth (future multi-user)
+bcrypt>=4.1.0              # Password hashing (future multi-user)

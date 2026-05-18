@@ -1,0 +1,121 @@
+# ============================================================
+# FORGE — Local Config (PC-specific overrides)
+# Overrides forge.yaml defaults for this machine
+# DATUM location: datum/forge
+# ============================================================
+
+system:
+  log_level: "INFO"
+  log_dir: "C:/Users/zach/.openclaw/workspace/datum/datum/forge/logs"
+  state_file: "C:/Users/zach/.openclaw/workspace/datum/datum/forge/forge_state.json"
+
+loop:
+  enabled: true
+  interval_seconds: 3600
+  on_start: true
+  max_concurrent_docs: 2
+  dry_run: false
+
+ai:
+  primary:
+    provider: "ollama"
+    base_url: "http://127.0.0.1:11434"
+    models:
+      reasoning:  "llama3.2:latest"      # best reasoning model available locally
+      fast:       "phi3:mini"             # fast classification
+      embedding:  "nomic-embed-text:latest"
+    timeout_seconds: 180
+    max_retries: 3
+
+  fallback:
+    provider: "anthropic"
+    api_key_env: "ANTHROPIC_API_KEY"
+    model: "claude-sonnet-4-6"
+    enabled: true
+    use_for:
+      - "web_enrichment"
+      - "final_quality_review"
+
+  web_search:
+    enabled: true
+    provider: "duckduckgo"
+    max_results: 5
+    timeout_seconds: 10
+    disabled_for_itar: false
+
+git:
+  enabled: true
+  auto_pull: true
+  auto_commit: true
+  commit_message_prefix: "forge:"
+  author_name: "FORGE AI"
+  author_email: "forge@wecr8.info"
+  branch: ""
+  push_after_commit: false
+  diff_context_lines: 3
+
+filesystem:
+  watch_enabled: true
+  staging_dir: "C:/Users/zach/.openclaw/workspace/datum/datum/forge/staging"
+  processed_dir: "C:/Users/zach/.openclaw/workspace/datum/datum/forge/processed"
+  supported_extensions:
+    - ".md"
+    - ".txt"
+    - ".pdf"
+    - ".docx"
+    - ".html"
+    - ".rst"
+  ignore_patterns:
+    - "*.tmp"
+    - ".git/*"
+    - "node_modules/*"
+    - "__pycache__/*"
+    - "forge_state.json"
+    - "*.log"
+
+rag:
+  enabled: true
+  api_base: "http://localhost:3001/api"
+  jwt_env: "WECR8_ADMIN_JWT"
+  reindex_on_commit: true
+  client_id: ""
+
+verification:
+  min_quality_score: 75
+  max_repair_attempts: 3
+  score_weights:
+    completeness:    0.25
+    accuracy:        0.30
+    format:          0.20
+    clarity:         0.15
+    currency:        0.10
+
+domains:
+  default: "general"
+  auto_detect: true
+  available:
+    - "racing_app"
+    - "manufacturing"
+    - "general"
+
+cross_ref:
+  enabled: true
+  # Root of the codebase for symbol/file indexing — set to repo root, not docs subdir
+  repo_root: ""   # leave empty to use processing path; set absolute path to override
+  # Directories to skip when building file/symbol index
+  skip_dirs:
+    - "node_modules"
+    - ".git"
+    - "__pycache__"
+    - "coverage"
+    - "playwright-report"
+    - ".expo"
+    - "android"
+    - "ios"
+    - ".firebase"
+  # Only flag file refs with these extensions
+  file_extensions:
+    - ".ts"
+    - ".tsx"
+    - ".js"
+    - ".jsx"

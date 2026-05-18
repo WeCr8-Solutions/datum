@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FORGE Run Report — 2026-04-18 19:35</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500&display=swap');
+:root {
+  --bg:#080c10;--surface:#0d1218;--card:#121920;--border:#1e2833;
+  --accent:#e8621a;--text:#dde6f0;--sub:#8a9bb0;--dim:#4a5568;
+  --green:#22d3a0;--amber:#f59e0b;--red:#ef4444;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Instrument Sans',sans-serif;
+      font-size:14px;line-height:1.6;padding:2rem;}
+h1{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;letter-spacing:-.5px;}
+h1 em{color:var(--accent);font-style:normal;}
+h2{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:.5px;
+    color:var(--sub);margin:1.5rem 0 .6rem;text-transform:uppercase;font-size:.75rem;}
+.meta{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--dim);margin-bottom:1.5rem;}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:1.5rem;}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr;}}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1rem;text-align:center;}
+.stat-v{font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;line-height:1;}
+.stat-l{font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:1.5px;color:var(--dim);margin-top:.25rem;}
+table{width:100%;border-collapse:collapse;margin-bottom:1rem;}
+th{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:1px;color:var(--dim);
+    text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,.02);}
+td{padding:.55rem .6rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1.1rem;margin-bottom:1rem;overflow-x:auto;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:1px;
+      padding:2px 8px;border-radius:20px;}
+.footer{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--dim);
+         text-align:center;margin-top:2rem;border-top:1px solid var(--border);padding-top:1rem;}
+</style>
+</head>
+<body>
+
+<h1>FORGE <em>Run Report</em></h1>
+<div class="meta">
+  2026-04-18 19:35:05 ·
+  Run #0 ·
+  Repo: /app/forge
+  
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-v" style="color:#ef4444">0</div>
+    <div class="stat-l">AVG QUALITY</div>
+  </div>
+  <div class="stat">
+    <div class="stat-v" style="color:var(--accent)">2</div>
+    <div class="stat-l">VERIFIED</div>
+  </div>
+  <div class="stat">
+    <div class="stat-v" style="color:var(--amber)">0</div>
+    <div class="stat-l">REPAIRED</div>
+  </div>
+  <div class="stat">
+    <div class="stat-v" style="color:var(--green)">1</div>
+    <div class="stat-l">CLEAN DOCS</div>
+  </div>
+  <div class="stat">
+    <div class="stat-v" style="color:var(--red)">0</div>
+    <div class="stat-l">FAILED</div>
+  </div>
+</div>
+
+<h2>Verification Results</h2>
+<div class="card">
+  <table>
+    <thead><tr>
+      <th>Document</th><th>Score</th><th>Grade</th>
+      <th>Domain</th><th>Issues</th><th>Status</th>
+    </tr></thead>
+    <tbody><tr>
+              <td style="font-family:monospace;font-size:.75rem;color:#8a9bb0;">requirements.txt</td>
+              <td><span style="color:#f59e0b;font-weight:700;font-family:monospace;">85</span></td>
+              <td><span style="font-size:.7rem;color:#6b7a99;font-family:monospace;">B</span></td>
+              <td style="font-size:.75rem;color:#6b7a99;">general</td>
+              <td style="font-size:.72rem;color:#ef4444;"></td>
+              <td><span style="font-size:.7rem;padding:2px 6px;border-radius:2px;
+                background:rgba(34,211,160,.1);
+                color:#22d3a0;">
+                pass</span></td>
+            </tr><tr>
+              <td style="font-family:monospace;font-size:.75rem;color:#8a9bb0;">README.md</td>
+              <td><span style="color:#f97316;font-weight:700;font-family:monospace;">63</span></td>
+              <td><span style="font-size:.7rem;color:#6b7a99;font-family:monospace;">D</span></td>
+              <td style="font-size:.75rem;color:#6b7a99;">manufacturing</td>
+              <td style="font-size:.72rem;color:#ef4444;">Maintenance procedures must reference LOTO procedu</td>
+              <td><span style="font-size:.7rem;padding:2px 6px;border-radius:2px;
+                background:rgba(245,158,11,.1);
+                color:#f59e0b;">
+                repair</span></td>
+            </tr></tbody>
+  </table>
+</div>
+
+<h2>Repair Results</h2>
+<div class="card">
+  <table>
+    <thead><tr>
+      <th>Document</th><th>Before</th><th>After</th>
+      <th>Delta</th><th>Changes</th><th>Status</th>
+    </tr></thead>
+    <tbody><tr><td colspan="6" style="text-align:center;color:var(--dim);padding:1.5rem;">No repairs this run</td></tr></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  FORGE v1.0 · WeCr8 Consulting · wecr8.info ·
+  Powered by Ollama (local) + Claude fallback ·
+  Report: forge_run_20260418_193505.html
+</div>
+
+</body>
+</html>

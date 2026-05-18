@@ -1,0 +1,285 @@
+# ============================================================
+# FORGE Domain: Manufacturing / CNC Machining
+# ============================================================
+# Defines what "correct" looks like for manufacturing documents.
+# FORGE uses these rules during verification and repair.
+
+domain:
+  id: "manufacturing"
+  name: "Manufacturing & CNC Machining"
+  aliases:
+    - "cnc"
+    - "machining"
+    - "machine shop"
+    - "job shop"
+    - "cnc_machining"
+    - "aerospace_manufacturing"
+
+# ── Detection signals ─────────────────────────────────────────────────────
+# FORGE uses these to auto-detect when a doc belongs to this domain
+detection:
+  keywords:
+    strong:    # Any one of these = high probability this domain
+      - "CNC"
+      - "G-code"
+      - "M-code"
+      - "spindle"
+      - "feed rate"
+      - "surface finish"
+      - "tolerance"
+      - "GD&T"
+      - "first article"
+      - "NCR"
+      - "SOP"
+      - "AS9100"
+      - "ITAR"
+      - "MSDS"
+      - "coolant"
+      - "chip load"
+      - "depth of cut"
+    weak:      # Need 2+ of these
+      - "machined"
+      - "milling"
+      - "turning"
+      - "boring"
+      - "inspection"
+      - "fixture"
+      - "setup"
+      - "operator"
+      - "workholding"
+  path_patterns:
+    - "*/sop*"
+    - "*/setup*"
+    - "*/machine*"
+    - "*/quality*"
+    - "*/ncr*"
+    - "*/gcode*"
+    - "*/tooling*"
+
+# ── Document type taxonomy ────────────────────────────────────────────────
+document_types:
+  sop:
+    name: "Standard Operating Procedure"
+    required_sections:
+      - "Purpose"
+      - "Scope"
+      - "Responsibilities"
+      - "Procedure"
+      - "Quality Checks"
+      - "Safety"
+      - "Revision History"
+    required_metadata:
+      - "SOP Number"
+      - "Revision"
+      - "Date"
+      - "Approved By"
+    numbering_format: "SOP-{dept}-{number}"
+    style_guide: "manufacturing_sop"
+
+  machine_manual:
+    name: "Machine Manual / Reference"
+    required_sections:
+      - "Machine Specifications"
+      - "Controls Overview"
+      - "Operation"
+      - "Alarms & Troubleshooting"
+      - "Maintenance"
+      - "Safety"
+    required_metadata:
+      - "Machine Model"
+      - "Controller Type"
+      - "Document Revision"
+    style_guide: "technical_reference"
+
+  setup_sheet:
+    name: "Setup Sheet"
+    required_sections:
+      - "Part Information"
+      - "Machine"
+      - "Tools Required"
+      - "Workholding"
+      - "Program Notes"
+      - "First Article Requirements"
+    required_metadata:
+      - "Part Number"
+      - "Operation Number"
+      - "Revision"
+    style_guide: "manufacturing_form"
+
+  quality_manual:
+    name: "Quality Manual"
+    required_sections:
+      - "Policy"
+      - "Scope"
+      - "Procedures"
+      - "Records"
+      - "Responsibilities"
+    required_metadata:
+      - "Revision"
+      - "Effective Date"
+      - "QMS Standard"
+    style_guide: "quality_system"
+
+  training_material:
+    name: "Training / Operator Guide"
+    required_sections:
+      - "Learning Objectives"
+      - "Prerequisites"
+      - "Content"
+      - "Assessment"
+      - "Competency Sign-off"
+    style_guide: "training"
+
+  g_code_reference:
+    name: "G-Code / M-Code Reference"
+    required_sections:
+      - "Code"
+      - "Description"
+      - "Parameters"
+      - "Example"
+      - "Controller Compatibility"
+    style_guide: "technical_reference"
+
+# ── Verification rules ────────────────────────────────────────────────────
+verification_rules:
+
+  # Technical accuracy checks
+  accuracy:
+    - id: "imperial_metric_consistency"
+      description: "Units must be consistent — don't mix imperial and metric without explicit conversion"
+      severity: "error"
+      check: "unit_consistency"
+
+    - id: "tolerance_format"
+      description: "Tolerances must be written as ±X.XXX or +X.XXX/-X.XXX format"
+      severity: "warning"
+      pattern: "\\d+\\.?\\d*\\s*(mm|in|inches|\"|')"
+
+    - id: "gcode_syntax"
+      description: "G-code and M-code references must follow standard format (G01, M03, etc.)"
+      severity: "error"
+      pattern: "[GM]\\d{1,3}"
+
+    - id: "speed_feed_units"
+      description: "Speeds must specify RPM or SFM. Feeds must specify IPM or IPR or mm/min"
+      severity: "warning"
+      keywords: ["RPM", "SFM", "IPM", "IPR", "mm/min", "m/min"]
+
+    - id: "material_grade_specificity"
+      description: "Material callouts should use full grade designation (e.g. 6061-T6, not just 'aluminum')"
+      severity: "warning"
+      examples_correct: ["6061-T6", "304 SS", "Ti-6Al-4V", "4140 HT"]
+      examples_incorrect: ["aluminum", "stainless", "titanium", "steel"]
+
+  # Safety checks — these are ERRORS, never warnings
+  safety:
+    - id: "ppe_required"
+      description: "Any operation involving coolants, chips, or machinery must specify PPE requirements"
+      severity: "error"
+      trigger_keywords: ["coolant", "cutting", "operation", "machine", "lathe", "mill"]
+      required_content: ["PPE", "safety glasses", "gloves", "hearing protection"]
+
+    - id: "lockout_tagout"
+      description: "Maintenance procedures must reference LOTO procedures"
+      severity: "error"
+      trigger_keywords: ["maintenance", "repair", "change", "replace"]
+      required_content: ["lockout", "LOTO", "de-energize", "zero energy"]
+
+    - id: "msds_reference"
+      description: "Chemical handling sections must reference MSDS/SDS sheets"
+      severity: "error"
+      trigger_keywords: ["coolant", "oil", "solvent", "chemical", "lubricant"]
+      required_content: ["MSDS", "SDS", "safety data sheet"]
+
+  # Format and completeness checks
+  format:
+    - id: "revision_control"
+      description: "All controlled documents must have revision history table"
+      severity: "error"
+      required: ["Revision", "Rev", "revision history"]
+
+    - id: "approval_block"
+      description: "Controlled documents must have approval signature block"
+      severity: "warning"
+      required: ["Approved By", "Approval", "Prepared By"]
+
+    - id: "doc_number"
+      description: "All SOPs and quality docs should have a document number"
+      severity: "warning"
+      pattern: "(SOP|QP|WI|MP|OP)-[A-Z0-9-]+"
+
+# ── Web verification topics ───────────────────────────────────────────────
+# When FORGE verifies technical claims, it searches for these
+web_verification:
+  verify_topics:
+    - "CNC G-code standards ISO 6983"
+    - "FANUC G-code reference"
+    - "Haas G-code reference"
+    - "AS9100 Rev D requirements"
+    - "ITAR controlled technical data"
+    - "cutting tool speeds feeds"
+    - "GD&T ASME Y14.5"
+    - "material machinability ratings"
+  trusted_sources:
+    - "haascnc.com"
+    - "fanuc.com"
+    - "asme.org"
+    - "sme.org"
+    - "toolingandproduction.com"
+    - "mmsonline.com"
+    - "sandvik.com"
+    - "kennametal.com"
+
+# ── Style guide ───────────────────────────────────────────────────────────
+style:
+  manufacturing_sop:
+    voice: "imperative"              # Use command form: "Verify X", not "You should verify X"
+    person: "second"                 # Address "the operator", not "I" or "we"
+    technical_level: "intermediate"  # Assume basic machining knowledge, not expert
+    max_step_words: 25               # Each procedure step ≤ 25 words
+    use_numbered_steps: true
+    use_warnings_for_safety: true
+    warning_format: "⚠ WARNING: {text}"
+    caution_format: "⚠ CAUTION: {text}"
+    note_format: "NOTE: {text}"
+
+  technical_reference:
+    voice: "descriptive"
+    technical_level: "expert"
+    use_tables: true
+    use_code_blocks: true           # For G-code examples
+    include_examples: true
+
+# ── Repair prompts ────────────────────────────────────────────────────────
+# System prompts FORGE uses when repairing docs in this domain
+repair_prompts:
+  base: |
+    You are a senior manufacturing documentation specialist with 20+ years of experience
+    in CNC machining, AS9100 quality systems, and ITAR-compliant technical writing.
+
+    You write documentation for CNC machine shops — operators, setup technicians,
+    quality engineers, and shop managers are your audience.
+
+    ALWAYS:
+    - Use imperative voice for procedures ("Verify the offset" not "You should verify")
+    - Specify exact units (RPM, IPM, mm, inches — never leave ambiguous)
+    - Flag safety hazards with ⚠ WARNING: or ⚠ CAUTION:
+    - Reference MSDS/SDS for any chemical handling
+    - Use full material grade designations (6061-T6, not "aluminum")
+    - Include revision history on controlled documents
+
+    NEVER:
+    - Invent specific values (speeds, feeds, temperatures) — use [VERIFY] placeholders
+    - Remove safety warnings
+    - Change document numbers or revision letters
+    - Alter approval blocks
+
+  sop_repair: |
+    You are repairing a Standard Operating Procedure for a CNC machine shop.
+    The procedure must follow AS9100 document control requirements.
+    Structure: Purpose → Scope → Responsibilities → Procedure (numbered) → Quality Checks → Safety → Revision History
+
+  gcode_repair: |
+    You are correcting a G-code or M-code reference document.
+    All codes must be verified against ISO 6983 and common controller implementations (FANUC, Haas, Mazak, Okuma, Siemens).
+    Always note controller-specific variations. Include working code examples.

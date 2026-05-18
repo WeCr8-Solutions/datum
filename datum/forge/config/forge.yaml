@@ -1,0 +1,137 @@
+# ============================================================
+# FORGE — Framework for Ongoing Repository Growth & Enhancement
+# Master Configuration
+# ============================================================
+
+system:
+  name: "FORGE"
+  version: "1.0.0"
+  description: "Self-repairing, self-improving, self-verifying document intelligence loop"
+  log_level: "INFO"           # DEBUG | INFO | WARNING | ERROR
+  log_dir: "./logs"
+  state_file: "./forge_state.json"
+
+# ── Loop settings ─────────────────────────────────────────────────────────
+loop:
+  enabled: true
+  interval_seconds: 3600      # How often to run the full loop (3600 = hourly)
+  on_start: true              # Run immediately on startup
+  max_concurrent_docs: 3      # Process N docs in parallel
+  dry_run: false              # If true: analyze and report but never write changes
+
+# ── AI provider stack (local-first, API fallback) ─────────────────────────
+ai:
+  # Primary: Ollama (local, ITAR-safe, zero API cost)
+  primary:
+    provider: "ollama"
+    base_url: "http://host.docker.internal:11434"
+    models:
+      reasoning:  "llama3.2:latest"   # Main analysis and rewriting
+      fast:       "phi3:mini"          # Quick checks, classification
+      embedding:  "nomic-embed-text:latest" # Semantic similarity
+    timeout_seconds: 120
+    max_retries: 3
+
+  # Fallback: Claude (only when Ollama unavailable OR explicitly requested)
+  fallback:
+    provider: "anthropic"
+    api_key_env: "ANTHROPIC_API_KEY"
+    model: "claude-sonnet-4-5"
+    enabled: true               # Set false to disable fallback entirely (full ITAR)
+    use_for:                    # Tasks where fallback is allowed
+      - "web_enrichment"        # Web-sourced rewrites (needs strong reasoning)
+      - "final_quality_review"  # Final pass on critical docs
+
+  # Web search for verification (optional — disable for fully air-gapped)
+  web_search:
+    enabled: true
+    provider: "duckduckgo"      # duckduckgo (free, no key) | serpapi | brave
+    serpapi_key_env: "SERPAPI_KEY"
+    brave_key_env: "BRAVE_API_KEY"
+    max_results: 5
+    timeout_seconds: 10
+    disabled_for_itar: true     # Override: disable web for ITAR-flagged repos
+
+# ── Git settings ──────────────────────────────────────────────────────────
+git:
+  enabled: true
+  auto_pull: true               # Pull latest before each loop
+  auto_commit: true             # Commit improvements after each loop
+  commit_message_prefix: "forge:"
+  author_name: "FORGE AI"
+  author_email: "forge@wecr8.info"
+  branch: ""                    # Empty = current branch
+  push_after_commit: false      # Push to remote (requires credentials)
+  diff_context_lines: 3
+
+# ── Filesystem watcher ────────────────────────────────────────────────────
+filesystem:
+  watch_enabled: true           # Watch for new/changed files in real-time
+  staging_dir: "./staging"      # Drop files here to queue them
+  processed_dir: "./processed"  # Move originals here after ingestion
+  supported_extensions:
+    - ".md"
+    - ".txt"
+    - ".pdf"
+    - ".docx"
+    - ".html"
+    - ".rst"
+  ignore_patterns:
+    - "*.tmp"
+    - ".git/*"
+    - "node_modules/*"
+    - "__pycache__/*"
+    - "forge_state.json"
+    - "*.log"
+
+# ── RAG backend integration ───────────────────────────────────────────────
+rag:
+  enabled: true
+  api_base: "http://localhost:3001/api"
+  jwt_env: "WECR8_ADMIN_JWT"
+  reindex_on_commit: true       # Push improved docs back to RAG search index
+  client_id: ""                 # Leave empty to use env var WECR8_CLIENT_ID
+
+# ── Verification thresholds ───────────────────────────────────────────────
+verification:
+  min_quality_score: 75         # Docs below this score get repaired
+  max_repair_attempts: 3        # Give up after N failed repair attempts
+  score_weights:
+    completeness:    0.25       # Does it cover what it should?
+    accuracy:        0.30       # Are technical claims correct/verifiable?
+    format:          0.20       # Does it follow the domain standard?
+    clarity:         0.15       # Is it readable by the target audience?
+    currency:        0.10       # Is it up to date?
+
+# ── Domain configurations (loaded from domains/ directory) ────────────────
+domains:
+  default: "general"
+  auto_detect: true             # Detect domain from content/path
+  available:
+    - "manufacturing"
+    - "cnc_machining"
+    - "aerospace"
+    - "quality_systems"
+    - "workforce_dev"
+    - "business"
+    - "general"
+
+# ── Notifications ─────────────────────────────────────────────────────────
+notifications:
+  enabled: false
+  email:
+    smtp_host_env: "SMTP_HOST"
+    smtp_user_env: "SMTP_USER"
+    smtp_pass_env: "SMTP_PASS"
+    recipients: []
+  on_events:
+    - "repair_failed"
+    - "loop_error"
+    - "quality_drop"            # Alert if overall score drops >10 points
+
+# ── Output / report settings ──────────────────────────────────────────────
+reporting:
+  generate_run_report: true
+  report_dir: "./reports"
+  keep_last_n_reports: 30
+  format: "html"               # html | json | markdown

@@ -1,0 +1,2519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PANEL — WeCr8 Command Center</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── DESIGN: Industrial control panel aesthetic.
+   Dark, precise, like the operator interface on a Haas or Fanuc.
+   High contrast. Clear state. Nothing ambiguous.
+   Every control labeled. Every status visible.
+   Information density of a real panel — but readable at 55. ── */
+
+:root {
+  --panel:      #0f1319;
+  --surface:    #161c26;
+  --card:       #1c2433;
+  --raised:     #222d3d;
+  --border:     #2a3548;
+  --border-hi:  #3a4d66;
+
+  --amber:      #f5a623;
+  --amber-lo:   rgba(245,166,35,.12);
+  --amber-md:   rgba(245,166,35,.25);
+  --green:      #27c47a;
+  --green-lo:   rgba(39,196,122,.12);
+  --red:        #e8402a;
+  --red-lo:     rgba(232,64,42,.12);
+  --blue:       #3d8ef5;
+  --blue-lo:    rgba(61,142,245,.12);
+  --purple:     #a855f7;
+  --purple-lo:  rgba(168,85,247,.12);
+
+  --text:       #e8edf5;
+  --sub:        #7a8ba8;
+  --dim:        #3d4f6a;
+
+  --forge:      #f5a623;
+  --anvil:      #3d8ef5;
+
+  --display:    'Barlow Condensed', sans-serif;
+  --body:       'Barlow', sans-serif;
+  --mono:       'JetBrains Mono', monospace;
+
+  --sidebar-w:  220px;
+  --topbar-h:   56px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { height:100%; }
+body {
+  background: var(--panel);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1.5;
+  height: 100%;
+  overflow: hidden;
+}
+button { cursor:pointer; font-family:inherit; border:none; background:none; }
+input, textarea, select { font-family:inherit; }
+
+/* ══════════════════════════════════════════════
+   APP SHELL — sidebar + main
+══════════════════════════════════════════════ */
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--topbar-h) 1fr;
+  height: 100vh;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  gap: 1rem;
+  position: relative;
+  z-index: 50;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--text);
+}
+.brand-dot { color: var(--amber); }
+.brand-sub {
+  font-family: var(--mono);
+  font-size: .58rem;
+  letter-spacing: 2px;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.topbar-divider { width:1px; height:24px; background:var(--border); flex-shrink:0; }
+
+/* System status pills */
+.sys-pills { display:flex; gap:.5rem; flex:1; }
+.sys-pill {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .25rem .7rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: .6rem;
+  letter-spacing: 1px;
+  color: var(--sub);
+  white-space: nowrap;
+}
+.sys-pill.online { border-color: var(--green); color: var(--green); }
+.sys-pill.warning { border-color: var(--amber); color: var(--amber); }
+.sys-pill.offline { border-color: var(--red); color: var(--red); }
+.pill-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+.sys-pill:not(.online):not(.warning):not(.offline) .pill-dot { animation:none; }
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-left: auto;
+}
+.pending-badge {
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: 1px;
+  padding: .25rem .65rem;
+  border-radius: 3px;
+  background: var(--amber-lo);
+  border: 1px solid var(--amber-md);
+  color: var(--amber);
+  white-space: nowrap;
+}
+.pending-badge.clear { background: var(--green-lo); border-color: rgba(39,196,122,.3); color: var(--green); }
+
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .3rem .65rem .3rem .35rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: border-color .15s;
+  color: var(--sub);
+  font-size: .82rem;
+}
+.user-btn:hover { border-color: var(--border-hi); color: var(--text); }
+.user-av {
+  width: 26px; height: 26px;
+  border-radius: 3px;
+  background: var(--amber-lo);
+  border: 1px solid var(--amber-md);
+  color: var(--amber);
+  font-family: var(--display);
+  font-size: .85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.nav-section-label {
+  font-family: var(--mono);
+  font-size: .55rem;
+  letter-spacing: 2px;
+  color: var(--dim);
+  text-transform: uppercase;
+  padding: 1.1rem 1rem .35rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .55rem 1rem;
+  font-size: .88rem;
+  color: var(--sub);
+  border-left: 2px solid transparent;
+  transition: all .15s;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  position: relative;
+}
+.nav-item:hover { color: var(--text); background: rgba(255,255,255,.03); }
+.nav-item.active {
+  color: var(--amber);
+  border-left-color: var(--amber);
+  background: var(--amber-lo);
+}
+.nav-icon { font-size: 1rem; flex-shrink: 0; width: 18px; text-align: center; }
+.nav-badge {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: .58rem;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--red-lo);
+  color: var(--red);
+  border: 1px solid rgba(232,64,42,.3);
+}
+.nav-badge.amber { background: var(--amber-lo); color: var(--amber); border-color: var(--amber-md); }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: .75rem 1rem;
+  border-top: 1px solid var(--border);
+}
+.sidebar-footer-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-family: var(--mono);
+  font-size: .58rem;
+  color: var(--dim);
+  letter-spacing: .5px;
+  padding: .2rem 0;
+}
+
+/* ── MAIN CONTENT ── */
+.main-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--panel);
+}
+
+.page { display: none; padding: 1.5rem; max-width: 1100px; }
+.page.active { display: block; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(5px);} to{opacity:1;transform:translateY(0);} }
+
+/* ══════════════════════════════════════════════
+   SHARED COMPONENTS
+══════════════════════════════════════════════ */
+
+.page-title {
+  font-family: var(--display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin-bottom: .2rem;
+}
+.page-title em { color: var(--amber); font-style: normal; }
+.page-sub { font-size: .82rem; color: var(--sub); margin-bottom: 1.5rem; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1.1rem;
+  margin-bottom: .75rem;
+}
+.card-title {
+  font-family: var(--display);
+  font-size: .95rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin-bottom: .75rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: .75rem; }
+@media(max-width:900px) { .grid-4{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:1fr 1fr;} }
+@media(max-width:600px) { .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;} }
+
+/* Stat block */
+.stat-block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+.stat-block::before {
+  content:'';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 2px;
+}
+.stat-block.amber::before { background: var(--amber); }
+.stat-block.green::before { background: var(--green); }
+.stat-block.red::before   { background: var(--red); }
+.stat-block.blue::before  { background: var(--blue); }
+.stat-block.purple::before{ background: var(--purple); }
+
+.stat-val {
+  font-family: var(--display);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: .2rem;
+}
+.stat-label {
+  font-family: var(--mono);
+  font-size: .58rem;
+  letter-spacing: 1.5px;
+  color: var(--sub);
+  text-transform: uppercase;
+}
+.stat-delta {
+  font-family: var(--mono);
+  font-size: .65rem;
+  margin-top: .3rem;
+}
+.delta-up { color: var(--green); }
+.delta-dn { color: var(--red); }
+
+/* Section header */
+.sec-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .85rem;
+  padding-bottom: .6rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.sec-hdr h3 {
+  font-family: var(--display);
+  font-size: 1rem;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+/* Pill badge */
+.pill {
+  font-family: var(--mono);
+  font-size: .58rem;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+.pill-amber  { background: var(--amber-lo);  color: var(--amber);  border: 1px solid var(--amber-md); }
+.pill-green  { background: var(--green-lo);  color: var(--green);  border: 1px solid rgba(39,196,122,.3); }
+.pill-red    { background: var(--red-lo);    color: var(--red);    border: 1px solid rgba(232,64,42,.3); }
+.pill-blue   { background: var(--blue-lo);   color: var(--blue);   border: 1px solid rgba(61,142,245,.3); }
+.pill-purple { background: var(--purple-lo); color: var(--purple); border: 1px solid rgba(168,85,247,.3); }
+.pill-dim    { background: rgba(255,255,255,.04); color: var(--sub); border: 1px solid var(--border); }
+.pill-forge  { background: var(--amber-lo);  color: var(--amber);  border: 1px solid var(--amber-md); }
+.pill-anvil  { background: var(--blue-lo);   color: var(--blue);   border: 1px solid rgba(61,142,245,.3); }
+
+/* Action buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .5rem 1rem;
+  border-radius: 4px;
+  font-size: .85rem;
+  font-weight: 600;
+  transition: all .15s;
+  cursor: pointer;
+  border: 1.5px solid;
+  white-space: nowrap;
+}
+.btn:active { transform: scale(.97); }
+.btn-approve { background: var(--green-lo); border-color: var(--green); color: var(--green); }
+.btn-approve:hover { background: var(--green); color: var(--panel); }
+.btn-reject  { background: var(--red-lo);   border-color: var(--red);   color: var(--red);   }
+.btn-reject:hover  { background: var(--red);   color: white; }
+.btn-suggest { background: var(--blue-lo);  border-color: var(--blue);  color: var(--blue);  }
+.btn-suggest:hover { background: var(--blue);  color: white; }
+.btn-ghost { background: transparent; border-color: var(--border); color: var(--sub); }
+.btn-ghost:hover { border-color: var(--border-hi); color: var(--text); }
+.btn-primary { background: var(--amber); border-color: var(--amber); color: var(--panel); font-weight: 700; }
+.btn-primary:hover { opacity: .88; }
+.btn-sm { padding: .3rem .7rem; font-size: .78rem; }
+.btn-danger { background: var(--red-lo); border-color: rgba(232,64,42,.4); color: var(--red); }
+.btn-danger:hover { background: var(--red); color: white; }
+
+/* Table */
+table.data-table { width:100%; border-collapse:collapse; font-size:.84rem; }
+.data-table th {
+  font-family: var(--mono);
+  font-size: .58rem;
+  letter-spacing: 1.5px;
+  color: var(--sub);
+  text-align: left;
+  padding: .5rem .75rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+  text-transform: uppercase;
+}
+.data-table td {
+  padding: .6rem .75rem;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  vertical-align: middle;
+  color: var(--sub);
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,.02); }
+.data-table td.primary { color: var(--text); font-weight: 500; }
+
+/* Progress bar */
+.prog-wrap { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
+
+/* Input */
+.field { margin-bottom: .85rem; }
+.field label {
+  display: block;
+  font-family: var(--mono);
+  font-size: .6rem;
+  letter-spacing: 1.5px;
+  color: var(--sub);
+  text-transform: uppercase;
+  margin-bottom: .35rem;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: .6rem .85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: .88rem;
+  outline: none;
+  transition: border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--amber); }
+.field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+.field input::placeholder, .field textarea::placeholder { color: var(--dim); }
+.field select option { background: var(--card); }
+
+/* ══════════════════════════════════════════════
+   PAGE: DASHBOARD
+══════════════════════════════════════════════ */
+#page-dashboard .system-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+.system-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.system-card-head {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.system-name {
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.system-card-body { padding: .85rem 1rem; }
+.sys-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .3rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: .83rem;
+}
+.sys-metric:last-child { border-bottom: none; }
+.sys-metric-key { color: var(--sub); }
+.sys-metric-val { font-family: var(--mono); font-size: .78rem; color: var(--text); }
+
+/* Trend sparkline (CSS only) */
+.sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 28px;
+  margin-top: .5rem;
+}
+.spark-bar {
+  flex: 1;
+  border-radius: 1px 1px 0 0;
+  background: var(--amber);
+  opacity: .5;
+  min-height: 3px;
+  transition: opacity .2s;
+}
+.spark-bar:hover { opacity: 1; }
+.spark-bar.green { background: var(--green); }
+.spark-bar.blue  { background: var(--blue); }
+
+/* Activity stream */
+.activity-stream { max-height: 280px; overflow-y: auto; }
+.activity-item {
+  display: flex;
+  gap: .75rem;
+  padding: .55rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  align-items: flex-start;
+}
+.activity-item:last-child { border-bottom: none; }
+.act-time { font-family: var(--mono); font-size: .6rem; color: var(--dim); flex-shrink:0; width:42px; padding-top:2px; }
+.act-icon { font-size:.9rem; flex-shrink:0; }
+.act-text { flex:1; font-size:.82rem; color:var(--sub); line-height:1.4; }
+.act-text strong { color:var(--text); }
+
+/* ══════════════════════════════════════════════
+   PAGE: QUEUE
+══════════════════════════════════════════════ */
+
+/* Batch toolbar */
+.batch-bar {
+  display: none;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem 1rem;
+  background: var(--raised);
+  border: 1px solid var(--amber-md);
+  border-radius: 5px;
+  margin-bottom: .75rem;
+  animation: fadeIn .2s ease;
+}
+.batch-bar.visible { display: flex; }
+.batch-count { font-family: var(--mono); font-size: .72rem; color: var(--amber); flex:1; letter-spacing:.5px; }
+.batch-actions { display: flex; gap: .5rem; }
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter-chip {
+  font-family: var(--mono);
+  font-size: .6rem;
+  letter-spacing: 1px;
+  padding: .3rem .8rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  color: var(--sub);
+  cursor: pointer;
+  transition: all .15s;
+  text-transform: uppercase;
+}
+.filter-chip:hover { border-color: var(--border-hi); color: var(--text); }
+.filter-chip.active { background: var(--amber-lo); border-color: var(--amber-md); color: var(--amber); }
+.filter-sep { color: var(--dim); font-size: .7rem; }
+
+/* Review item card */
+.review-item {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  margin-bottom: .75rem;
+  overflow: hidden;
+  transition: border-color .15s;
+}
+.review-item:hover { border-color: var(--border-hi); }
+.review-item.selected { border-color: var(--amber); }
+.review-item.priority-urgent { border-left: 3px solid var(--red); }
+.review-item.priority-high   { border-left: 3px solid var(--amber); }
+.review-item.priority-medium { border-left: 3px solid var(--blue); }
+.review-item.priority-low    { border-left: 3px solid var(--dim); }
+.review-item.status-done     { opacity: .6; border-left-color: var(--green); }
+
+/* Item header */
+.item-head {
+  padding: .85rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+.item-check {
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .15s;
+}
+.item-check:hover { border-color: var(--amber); }
+.item-check.checked { background: var(--amber); border-color: var(--amber); }
+.item-check.checked::after { content:'✓'; color: var(--panel); font-size: 11px; font-weight: 900; }
+
+.item-source-icon {
+  width: 36px; height: 36px;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+  font-family: var(--display); font-weight: 800; font-size: .75rem;
+  letter-spacing: 1px;
+}
+.src-forge { background: var(--amber-lo); color: var(--amber); border: 1px solid var(--amber-md); }
+.src-anvil { background: var(--blue-lo);  color: var(--blue);  border: 1px solid rgba(61,142,245,.3); }
+
+.item-meta { flex:1; min-width:0; }
+.item-title {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: .25rem;
+  line-height: 1.3;
+}
+.item-tags {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.item-file {
+  font-family: var(--mono);
+  font-size: .6rem;
+  color: var(--dim);
+  margin-top: .25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-head-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .35rem;
+  flex-shrink: 0;
+}
+.item-age { font-family: var(--mono); font-size: .6rem; color: var(--dim); }
+
+/* Item expanded body */
+.item-body { display: none; }
+.item-body.open { display: block; animation: fadeIn .2s ease; }
+
+/* Plain English explanation box */
+.plain-box {
+  padding: 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.plain-label {
+  font-family: var(--mono);
+  font-size: .58rem;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: .4rem;
+}
+.plain-text {
+  font-size: .95rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+.plain-text strong { color: var(--amber); }
+
+/* ITAR gate */
+.itar-gate {
+  margin: .85rem 1rem;
+  padding: .85rem 1rem;
+  background: rgba(232,64,42,.07);
+  border: 1px solid rgba(232,64,42,.35);
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+}
+.itar-icon { font-size: 1.2rem; flex-shrink:0; }
+.itar-text { flex:1; font-size:.88rem; color:var(--sub); line-height:1.5; }
+.itar-text strong { color: var(--red); }
+.itar-confirm {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .6rem;
+  font-size: .83rem;
+  color: var(--sub);
+  cursor: pointer;
+}
+.itar-confirm input[type=checkbox] { width:16px; height:16px; accent-color: var(--red); }
+
+/* Content tabs */
+.content-tabs { padding: 0 1rem; border-bottom: 1px solid var(--border); display: flex; gap: 0; }
+.ctab {
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: .8px;
+  padding: .65rem .9rem;
+  color: var(--sub);
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.ctab:hover { color: var(--text); }
+.ctab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+.ctab-panel { display: none; padding: 1rem; }
+.ctab-panel.active { display: block; }
+
+.content-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: .85rem;
+  font-size: .83rem;
+  line-height: 1.7;
+  color: var(--sub);
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.content-block.code {
+  font-family: var(--mono);
+  font-size: .78rem;
+}
+.diff-add { color: var(--green); display: block; background: rgba(39,196,122,.06); }
+.diff-rem { color: var(--red);   display: block; background: rgba(232,64,42,.06); text-decoration: line-through; opacity:.6; }
+.diff-ctx { color: var(--dim);   display: block; }
+
+/* Issues list */
+.issues-list { list-style: none; }
+.issue-item {
+  display: flex;
+  gap: .65rem;
+  padding: .55rem .75rem;
+  border-radius: 4px;
+  margin-bottom: .35rem;
+  font-size: .85rem;
+  align-items: flex-start;
+}
+.issue-item.error   { background: var(--red-lo);   border: 1px solid rgba(232,64,42,.25); }
+.issue-item.warning { background: rgba(245,166,35,.07); border: 1px solid rgba(245,166,35,.25); }
+.issue-item.info    { background: var(--blue-lo);  border: 1px solid rgba(61,142,245,.2); }
+.issue-icon { flex-shrink:0; }
+.issue-msg { flex:1; color: var(--sub); line-height:1.4; }
+.issue-msg strong { color: var(--text); }
+
+/* AI Reasoning */
+.reasoning-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--purple);
+  border-radius: 0 4px 4px 0;
+  padding: .85rem 1rem;
+  font-size: .85rem;
+  line-height: 1.7;
+  color: var(--sub);
+}
+.reasoning-box strong { color: var(--text); }
+
+/* Pattern history */
+.pattern-entry {
+  display: flex;
+  gap: .75rem;
+  padding: .55rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: .82rem;
+  align-items: center;
+}
+.pattern-entry:last-child { border-bottom: none; }
+.pat-date { font-family: var(--mono); font-size: .6rem; color: var(--dim); flex-shrink:0; width: 80px; }
+.pat-text { flex:1; color: var(--sub); }
+.pat-outcome { flex-shrink:0; }
+
+/* Conversation thread */
+.thread { }
+.thread-msg {
+  display: flex;
+  gap: .75rem;
+  margin-bottom: .85rem;
+}
+.thread-avatar {
+  width: 30px; height: 30px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: .75rem;
+  font-weight: 700;
+}
+.av-ai    { background: var(--purple-lo); color: var(--purple); border: 1px solid rgba(168,85,247,.3); }
+.av-forge { background: var(--amber-lo);  color: var(--amber);  border: 1px solid var(--amber-md); }
+.av-anvil { background: var(--blue-lo);   color: var(--blue);   border: 1px solid rgba(61,142,245,.3); }
+.av-human { background: var(--green-lo);  color: var(--green);  border: 1px solid rgba(39,196,122,.3); }
+.thread-body { flex:1; }
+.thread-who { font-family: var(--mono); font-size:.6rem; color:var(--dim); margin-bottom:.3rem; letter-spacing:.5px; }
+.thread-bubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 5px 5px 5px;
+  padding: .65rem .85rem;
+  font-size: .85rem;
+  line-height: 1.6;
+  color: var(--sub);
+}
+.thread-bubble strong { color: var(--text); }
+.thread-bubble.human-msg { border-radius: 5px 0 5px 5px; background: rgba(39,196,122,.06); border-color: rgba(39,196,122,.2); color: var(--text); }
+
+/* Reply box */
+.reply-row { display: flex; gap: .5rem; margin-top: .75rem; padding: 0 1rem 1rem; }
+.reply-input {
+  flex:1;
+  padding: .55rem .85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: .88rem;
+  outline: none;
+  transition: border-color .15s;
+}
+.reply-input:focus { border-color: var(--amber); }
+.reply-input::placeholder { color: var(--dim); }
+
+/* Quick suggestion chips */
+.quick-chips { display: flex; flex-wrap: wrap; gap: .35rem; padding: 0 1rem .75rem; }
+.quick-chip {
+  font-family: var(--mono);
+  font-size: .6rem;
+  letter-spacing: .5px;
+  padding: .25rem .7rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--sub);
+  cursor: pointer;
+  transition: all .15s;
+}
+.quick-chip:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-lo); }
+
+/* Action footer */
+.item-actions {
+  padding: .85rem 1rem;
+  border-top: 1px solid var(--border);
+  background: rgba(255,255,255,.015);
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.action-label {
+  font-family: var(--mono);
+  font-size: .58rem;
+  letter-spacing: 1.5px;
+  color: var(--dim);
+  text-transform: uppercase;
+  flex-basis: 100%;
+  margin-bottom: -.1rem;
+}
+
+/* ══════════════════════════════════════════════
+   PAGE: CLIENTS
+══════════════════════════════════════════════ */
+.client-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: .75rem;
+  transition: border-color .15s;
+}
+.client-card:hover { border-color: var(--border-hi); }
+.client-head {
+  padding: .85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.client-avatar {
+  width: 38px; height: 38px;
+  border-radius: 4px;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--display);
+  font-size: .85rem;
+  font-weight: 800;
+  color: var(--amber);
+  flex-shrink: 0;
+}
+.client-name { font-size: .95rem; font-weight: 600; color: var(--text); }
+.client-tier { font-family: var(--mono); font-size: .58rem; color: var(--sub); }
+.client-body { padding: .75rem 1rem; display: grid; grid-template-columns: repeat(4,1fr); gap: .5rem; }
+.client-metric { text-align: center; }
+.client-metric-val { font-family: var(--display); font-size: 1.3rem; font-weight: 700; }
+.client-metric-key { font-family: var(--mono); font-size: .55rem; letter-spacing:1px; color: var(--sub); }
+
+/* ══════════════════════════════════════════════
+   PAGE: SYSTEM CONTROLS
+══════════════════════════════════════════════ */
+.control-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: .75rem;
+}
+.control-head {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.control-title { font-family: var(--display); font-size: .95rem; font-weight: 700; letter-spacing: 1px; }
+.control-body { padding: 1rem; }
+
+/* Toggle switch */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .6rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { font-size: .88rem; color: var(--sub); }
+.toggle-label strong { color: var(--text); display: block; font-size: .9rem; }
+.toggle {
+  width: 40px; height: 22px;
+  background: var(--border);
+  border-radius: 11px;
+  position: relative;
+  cursor: pointer;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--green); }
+.toggle::after {
+  content:'';
+  position: absolute;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: white;
+  top: 3px; left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.toggle.on::after { transform: translateX(18px); }
+
+/* Schedule display */
+.schedule-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .55rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: .84rem;
+}
+.schedule-row:last-child { border-bottom: none; }
+.sched-system { font-family: var(--display); font-weight: 700; letter-spacing: 1px; color: var(--text); width: 60px; flex-shrink:0; }
+.sched-interval { font-family: var(--mono); font-size: .72rem; color: var(--amber); flex:1; }
+.sched-next { font-family: var(--mono); font-size: .65rem; color: var(--sub); }
+.sched-run-btn { font-family: var(--mono); font-size: .6rem; letter-spacing: .5px; padding: .2rem .6rem; border: 1px solid var(--border); border-radius: 3px; color: var(--sub); transition: all .15s; }
+.sched-run-btn:hover { border-color: var(--green); color: var(--green); }
+
+/* ══════════════════════════════════════════════
+   PAGE: PATTERNS & REPORTS
+══════════════════════════════════════════════ */
+.pattern-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.pattern-bar-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .45rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: .83rem;
+}
+.pattern-bar-item:last-child { border-bottom: none; }
+.pbar-label { color: var(--sub); flex:1; min-width:0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pbar-track { width: 90px; height: 5px; background: var(--border); border-radius: 2px; overflow: hidden; flex-shrink:0; }
+.pbar-value { height: 100%; border-radius: 2px; }
+.pbar-count { font-family: var(--mono); font-size: .65rem; color: var(--sub); width: 30px; text-align: right; flex-shrink:0; }
+
+/* ══════════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════════ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.modal-head {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-title { font-family: var(--display); font-size: 1rem; font-weight: 700; letter-spacing: 1px; }
+.modal-close { width:30px;height:30px;border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--sub);transition:all .15s; }
+.modal-close:hover { border-color:var(--border-hi);color:var(--text); }
+.modal-body { padding: 1.1rem 1.25rem 1.25rem; }
+
+/* ══════════════════════════════════════════════
+   TOAST + EMPTY
+══════════════════════════════════════════════ */
+#toast {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 999;
+  background: var(--raised);
+  border: 1px solid var(--border-hi);
+  border-radius: 5px;
+  padding: .65rem 1.1rem;
+  font-size: .88rem;
+  color: var(--text);
+  display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  max-width: 300px;
+  animation: slideUp .2s ease;
+}
+#toast.show { display: flex; align-items: center; gap: .5rem; }
+@keyframes slideUp { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
+
+.empty-state { text-align:center; padding:3rem 1rem; color:var(--sub); }
+.empty-icon { font-size:2.5rem; margin-bottom:.65rem; }
+.empty-title { font-family:var(--display); font-size:1.1rem; color:var(--text); margin-bottom:.3rem; letter-spacing:1px; }
+
+/* ══════════════════════════════════════════════
+   SCROLLBARS
+══════════════════════════════════════════════ */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* ══════════════════════════════════════════════
+   MOBILE
+══════════════════════════════════════════════ */
+@media(max-width:720px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { display: none; }
+  .app-shell { grid-template-columns: 1fr; }
+  .page { padding: 1rem; }
+  .topbar { padding: 0 .85rem; }
+  .brand-sub { display:none; }
+  .sys-pills { display:none; }
+  .grid-2,.grid-3,.grid-4 { grid-template-columns:1fr; }
+  .item-head-right { display:none; }
+  #page-dashboard .system-row { grid-template-columns:1fr; }
+  .client-body { grid-template-columns:1fr 1fr; }
+  .pattern-stat-row { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+<!-- ══ TOPBAR ══ -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <span class="brand-name">PAN<span class="brand-dot">E</span>L</span>
+    <span class="brand-sub">// wecr8.info</span>
+  </div>
+  <div class="topbar-divider"></div>
+  <div class="sys-pills">
+    <span class="sys-pill online" id="pill-forge"><span class="pill-dot"></span>FORGE</span>
+    <span class="sys-pill online" id="pill-anvil"><span class="pill-dot"></span>ANVIL</span>
+    <span class="sys-pill" id="pill-lastrun"><span class="pill-dot" style="animation:none"></span>Last run: <span id="last-run-time">checking...</span></span>
+  </div>
+  <div class="topbar-right">
+    <span class="pending-badge" id="pending-badge">— pending</span>
+    <button class="user-btn" onclick="showPage('settings')">
+      <div class="user-av" id="topbar-avatar">Z</div>
+      <span id="topbar-name">Zach</span>
+    </button>
+  </div>
+</header>
+
+<!-- ══ SIDEBAR ══ -->
+<nav class="sidebar">
+  <div class="nav-section-label">Command</div>
+  <button class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+    <span class="nav-icon">⬛</span> Dashboard
+  </button>
+  <button class="nav-item" onclick="showPage('queue')" data-page="queue">
+    <span class="nav-icon">📋</span> Review Queue
+    <span class="nav-badge" id="nav-badge-queue">0</span>
+  </button>
+
+  <div class="nav-section-label">Operations</div>
+  <button class="nav-item" onclick="showPage('clients')" data-page="clients">
+    <span class="nav-icon">🏭</span> Clients
+  </button>
+  <button class="nav-item" onclick="showPage('docs')" data-page="docs">
+    <span class="nav-icon">📄</span> Documents
+    <span class="nav-badge" id="nav-badge-docs" style="background:var(--green-lo);color:var(--green);display:none;">0</span>
+  </button>
+  <button class="nav-item" onclick="showPage('patterns')" data-page="patterns">
+    <span class="nav-icon">📊</span> Patterns & Reports
+  </button>
+  <button class="nav-item" onclick="showPage('history')" data-page="history">
+    <span class="nav-icon">🕐</span> Decision History
+  </button>
+
+  <div class="nav-section-label">System</div>
+  <button class="nav-item" onclick="showPage('controls')" data-page="controls">
+    <span class="nav-icon">⚙️</span> System Controls
+  </button>
+  <button class="nav-item" onclick="showPage('settings')" data-page="settings">
+    <span class="nav-icon">👤</span> Settings
+  </button>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-row">PANEL v1.0</div>
+    <div class="sidebar-footer-row" id="sf-quality">Avg quality: <span id="sf-quality-val" style="color:var(--amber);margin-left:.25rem;">—</span></div>
+    <div class="sidebar-footer-row" id="sf-decisions">Decisions today: <span id="sf-decisions-val" style="color:var(--text);margin-left:.25rem;">0</span></div>
+  </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<main class="main-content">
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ DASHBOARD ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page active" id="page-dashboard">
+  <div class="page-title">Command <em>Center</em></div>
+  <div class="page-sub">System status, pending work, and recent activity at a glance.</div>
+
+  <!-- Stats row -->
+  <div class="grid-4" style="margin-bottom:.75rem;" id="dash-stats">
+    <div class="stat-block amber">
+      <div class="stat-val" style="color:var(--amber)" id="ds-pending">—</div>
+      <div class="stat-label">Awaiting Review</div>
+    </div>
+    <div class="stat-block green">
+      <div class="stat-val" style="color:var(--green)" id="ds-quality">—</div>
+      <div class="stat-label">Avg Doc Quality</div>
+      <div class="stat-delta delta-up" id="ds-quality-delta"></div>
+    </div>
+    <div class="stat-block blue">
+      <div class="stat-val" style="color:var(--blue)" id="ds-decisions">—</div>
+      <div class="stat-label">Decisions This Week</div>
+    </div>
+    <div class="stat-block purple">
+      <div class="stat-val" style="color:var(--purple)" id="ds-patterns">—</div>
+      <div class="stat-label">Patterns Learned</div>
+    </div>
+  </div>
+
+  <!-- System health -->
+  <div class="system-row" id="dash-systems">
+    <div class="system-card">
+      <div class="system-card-head">
+        <span class="system-name" style="color:var(--amber)">FORGE</span>
+        <span class="pill pill-amber" id="forge-status-pill">RUNNING</span>
+      </div>
+      <div class="system-card-body">
+        <div class="sys-metric"><span class="sys-metric-key">Last run</span><span class="sys-metric-val" id="forge-last-run">—</span></div>
+        <div class="sys-metric"><span class="sys-metric-key">Docs indexed</span><span class="sys-metric-val" id="forge-docs">—</span></div>
+        <div class="sys-metric"><span class="sys-metric-key">Repairs this week</span><span class="sys-metric-val" id="forge-repairs">—</span></div>
+        <div class="sys-metric"><span class="sys-metric-key">Total runs</span><span class="sys-metric-val" id="forge-runs">—</span></div>
+        <div class="sparkline" id="forge-spark"></div>
+      </div>
+    </div>
+    <div class="system-card">
+      <div class="system-card-head">
+        <span class="system-name" style="color:var(--blue)">ANVIL</span>
+        <span class="pill pill-anvil" id="anvil-status-pill">RUNNING</span>
+      </div>
+      <div class="system-card-body">
+        <div class="sys-metric"><span class="sys-metric-key">Last run</span><span class="sys-metric-val" id="anvil-last-run">—</span></div>
+        <div class="sys-metric"><span class="sys-metric-key">Files scanned</span><span class="sys-metric-val" id="anvil-files">—</span></div>
+        <div class="sys-metric"><span class="sys-metric-key">Issues found</span><span class="sys-metric-val" id="anvil-issues">—</span></div>
+        <div class="sys-metric"><span class="sys-metric-key">Patches applied</span><span class="sys-metric-val" id="anvil-patches">—</span></div>
+        <div class="sparkline" id="anvil-spark"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity + urgent -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">⚡ Needs Attention</div>
+      <div id="dash-urgent">
+        <div class="empty-state" style="padding:1.5rem;">
+          <div class="empty-icon" style="font-size:1.5rem;">✅</div>
+          <div class="empty-title" style="font-size:.88rem;">Queue is clear</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📡 Recent Activity</div>
+      <div class="activity-stream" id="dash-activity">
+        <div class="activity-item"><span class="act-time">—</span><span class="act-icon">⏳</span><span class="act-text">Loading...</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ QUEUE ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="page-queue">
+  <div class="page-title">Review <em>Queue</em></div>
+  <div class="page-sub">Every change FORGE and ANVIL made is here waiting for your OK.</div>
+
+  <!-- Batch toolbar -->
+  <div class="batch-bar" id="batch-bar">
+    <span class="batch-count" id="batch-count-label">0 selected</span>
+    <div class="batch-actions">
+      <button class="btn btn-approve btn-sm" onclick="batchAction('approve')">✓ Approve All Selected</button>
+      <button class="btn btn-reject btn-sm" onclick="batchAction('reject')">✗ Reject All</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearSelection()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <button class="filter-chip active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-chip" onclick="setFilter('urgent',this)">⚡ Urgent</button>
+    <button class="filter-chip" onclick="setFilter('forge',this)">FORGE</button>
+    <button class="filter-chip" onclick="setFilter('anvil',this)">ANVIL</button>
+    <button class="filter-chip" onclick="setFilter('itar',this)">⚠ ITAR</button>
+    <span class="filter-sep">·</span>
+    <button class="filter-chip" onclick="setFilter('done',this)">Show Done</button>
+  </div>
+
+  <div id="queue-container"></div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ CLIENTS ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="page-clients">
+  <div class="page-title">Client <em>Overview</em></div>
+  <div class="page-sub">Status of every shop you're serving. One panel, all clients.</div>
+  <div id="clients-list"></div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ PATTERNS ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="page-patterns">
+  <div class="page-title">Patterns <em>&amp; Reports</em></div>
+  <div class="page-sub">What the AI has learned. What you've approved. Where the gaps are.</div>
+
+  <div class="pattern-stat-row">
+    <div class="stat-block green">
+      <div class="stat-val" style="color:var(--green)" id="pat-total-approved">—</div>
+      <div class="stat-label">Total Approved</div>
+    </div>
+    <div class="stat-block red">
+      <div class="stat-val" style="color:var(--red)" id="pat-total-rejected">—</div>
+      <div class="stat-label">Total Rejected</div>
+    </div>
+    <div class="stat-block purple">
+      <div class="stat-val" style="color:var(--purple)" id="pat-patterns-learned">—</div>
+      <div class="stat-label">Patterns Learned</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Most Common Fix Types</div>
+      <div id="pat-fix-types"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Approval Rate by Source</div>
+      <div id="pat-approval-rates"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Document Gap Report</div>
+    <p style="font-size:.83rem;color:var(--sub);margin-bottom:.85rem;">Questions operators asked that had no good answer — missing SOPs the AI identified.</p>
+    <div id="pat-gaps"></div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ DOCUMENTS ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="page-docs">
+  <div class="page-title">Document <em>Library</em></div>
+  <div class="page-sub">Every document FORGE has indexed, scored, and verified. Click any row to read its content.</div>
+
+  <div style="display:flex;gap:.75rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap;">
+    <input id="docs-search" placeholder="Search documents…"
+      style="flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);color:var(--text);padding:.45rem .75rem;border-radius:4px;font-family:inherit;font-size:.83rem;"
+      oninput="filterDocs()">
+    <select id="docs-filter-domain" onchange="filterDocs()"
+      style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:.4rem .7rem;border-radius:4px;font-size:.83rem;font-family:inherit;">
+      <option value="">All domains</option>
+    </select>
+    <select id="docs-filter-status" onchange="filterDocs()"
+      style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:.4rem .7rem;border-radius:4px;font-size:.83rem;font-family:inherit;">
+      <option value="">All statuses</option>
+      <option value="verified">Verified</option>
+      <option value="repaired">Repaired</option>
+      <option value="pending">Pending</option>
+      <option value="failed">Failed</option>
+    </select>
+    <span id="docs-count" style="font-size:.82rem;color:var(--sub);white-space:nowrap;min-width:80px;text-align:right;"></span>
+  </div>
+
+  <div id="docs-table-wrap">
+    <table class="data-table">
+      <thead><tr>
+        <th>Document</th>
+        <th>Domain</th>
+        <th>Type</th>
+        <th style="text-align:center">Quality</th>
+        <th>Status</th>
+        <th>Last Verified</th>
+        <th style="width:50px"></th>
+      </tr></thead>
+      <tbody id="docs-tbody"><tr><td colspan="7" style="text-align:center;color:var(--sub);padding:2rem;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ HISTORY ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="page-history">
+  <div class="page-title">Decision <em>History</em></div>
+  <div class="page-sub">Every decision you've made, searchable and auditable.</div>
+  <div id="history-table-wrap">
+    <table class="data-table">
+      <thead><tr>
+        <th>Date</th><th>Item</th><th>Source</th>
+        <th>Decision</th><th>Note</th>
+      </tr></thead>
+      <tbody id="history-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ SYSTEM CONTROLS ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="page-controls">
+  <div class="page-title">System <em>Controls</em></div>
+  <div class="page-sub">Manage FORGE and ANVIL without touching a terminal.</div>
+
+  <div class="control-card">
+    <div class="control-head">
+      <span class="control-title">SCHEDULE</span>
+      <span class="pill pill-green">Running</span>
+    </div>
+    <div class="control-body">
+      <div class="schedule-row">
+        <span class="sched-system" style="color:var(--amber)">FORGE</span>
+        <span class="sched-interval">Every hour</span>
+        <span class="sched-next">Next: <span id="forge-next">—</span></span>
+        <button class="sched-run-btn" onclick="triggerRun('forge')">▶ Run Now</button>
+      </div>
+      <div class="schedule-row">
+        <span class="sched-system" style="color:var(--blue)">ANVIL</span>
+        <span class="sched-interval">Every 2 hours</span>
+        <span class="sched-next">Next: <span id="anvil-next">—</span></span>
+        <button class="sched-run-btn" onclick="triggerRun('anvil')">▶ Run Now</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="control-card">
+    <div class="control-head"><span class="control-title">FEATURE FLAGS</span></div>
+    <div class="control-body">
+      <div class="toggle-row">
+        <div class="toggle-label"><strong>Auto-approve routine doc improvements</strong>SOPs with score improvement ≥ 10 and no ITAR flag</div>
+        <div class="toggle" id="toggle-auto-approve" onclick="toggleFeature(this,'auto_approve')"></div>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-label"><strong>Web search enrichment</strong>Allow FORGE/ANVIL to search the web to verify technical claims</div>
+        <div class="toggle on" id="toggle-web-search" onclick="toggleFeature(this,'web_search')"></div>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-label"><strong>Email notifications</strong>Send email when new items arrive in the queue</div>
+        <div class="toggle on" id="toggle-email" onclick="toggleFeature(this,'email_notify')"></div>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-label"><strong>ANVIL code patching</strong>Allow ANVIL to write code changes (disable to analysis-only mode)</div>
+        <div class="toggle on" id="toggle-anvil-patch" onclick="toggleFeature(this,'anvil_patch')"></div>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-label"><strong>Dry run mode</strong>FORGE and ANVIL analyze but never write changes</div>
+        <div class="toggle" id="toggle-dry-run" onclick="toggleFeature(this,'dry_run')"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="control-card">
+    <div class="control-head"><span class="control-title">ROLES &amp; ACCESS</span><span class="pill pill-dim">Prep for multi-user</span></div>
+    <div class="control-body">
+      <p style="font-size:.85rem;color:var(--sub);margin-bottom:.85rem;">Currently single-reviewer mode. Role structure is ready — add team members when needed.</p>
+      <table class="data-table">
+        <thead><tr><th>Role</th><th>Can Review</th><th>Can Approve ITAR</th><th>System Controls</th></tr></thead>
+        <tbody>
+          <tr><td class="primary">Owner</td><td><span style="color:var(--green)">✓ All</span></td><td><span style="color:var(--green)">✓</span></td><td><span style="color:var(--green)">✓</span></td></tr>
+          <tr><td class="primary">Quality Manager</td><td><span style="color:var(--green)">✓ All</span></td><td><span style="color:var(--amber)">✓ with PIN</span></td><td><span style="color:var(--red)">✗</span></td></tr>
+          <tr><td class="primary">Shop Reviewer</td><td><span style="color:var(--amber)">✓ Non-ITAR</span></td><td><span style="color:var(--red)">✗</span></td><td><span style="color:var(--red)">✗</span></td></tr>
+          <tr><td class="primary">Read-Only</td><td><span style="color:var(--red)">✗</span></td><td><span style="color:var(--red)">✗</span></td><td><span style="color:var(--red)">✗</span></td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:.85rem;">
+        <button class="btn btn-ghost btn-sm" onclick="showToast('Role management coming in PANEL v1.1')">+ Invite Team Member</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ SETTINGS ━━━━━━━━━━━━━━━━━━━━ -->
+<div class="page" id="page-settings">
+  <div class="page-title">Profile &amp; <em>Settings</em></div>
+  <div class="page-sub">Your account and notification preferences.</div>
+  <div class="card" style="max-width:480px;">
+    <div class="card-title">Your Profile</div>
+    <div class="field"><label>Name</label><input id="set-name" value="Zach Goodbody"></div>
+    <div class="field"><label>Email</label><input id="set-email" value="zach@wecr8.info" type="email"></div>
+    <div class="field"><label>Role</label><input value="Owner" disabled style="opacity:.5;cursor:not-allowed;"></div>
+    <div class="field">
+      <label>Notify me by email when</label>
+      <select id="set-notify">
+        <option value="urgent">Urgent items only</option>
+        <option value="all" selected>Any new item</option>
+        <option value="digest">Daily digest only</option>
+        <option value="none">Never</option>
+      </select>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save Settings</button>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- ══ SUGGESTION MODAL ══ -->
+<div class="modal-overlay" id="suggest-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="modal-title-text">Send Feedback to AI</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:.82rem;color:var(--sub);margin-bottom:.85rem;" id="modal-context"></div>
+      <div class="field">
+        <label>Your message</label>
+        <textarea id="modal-input" placeholder="Write your question or suggestion in plain language. The AI will read this and try again with your guidance." rows="4"></textarea>
+      </div>
+      <div class="quick-chips" id="modal-quick-chips">
+        <button class="quick-chip" onclick="addChip('Why is this change needed?')">Why is this needed?</button>
+        <button class="quick-chip" onclick="addChip('Keep the original value — it was set intentionally.')">Keep original value</button>
+        <button class="quick-chip" onclick="addChip('The document this is based on may be outdated.')">Doc may be outdated</button>
+        <button class="quick-chip" onclick="addChip('Please double-check this against the physical document.')">Double-check reference</button>
+        <button class="quick-chip" onclick="addChip('This changes a value that was set by engineering — do not modify.')">Set by engineering</button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="submitModal()">Send →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━ DOCUMENT VIEWER ━━━━━━━━━━━━━━━━━━━━ -->
+<div id="doc-viewer-overlay" onclick="if(event.target===this)closeDocViewer()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;align-items:flex-start;justify-content:center;padding:2rem;overflow-y:auto;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;width:100%;max-width:860px;display:flex;flex-direction:column;max-height:88vh;">
+    <!-- header -->
+    <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;">
+      <span id="dv-itar" style="display:none;background:var(--red-lo);color:var(--red);font-size:.72rem;font-weight:700;padding:.15rem .45rem;border-radius:3px;border:1px solid var(--red);">⚠ ITAR</span>
+      <span id="dv-title" style="font-weight:600;flex:1;font-size:.92rem;font-family:var(--mono);word-break:break-all;"></span>
+      <span id="dv-quality" style="font-size:.8rem;font-family:var(--mono);"></span>
+      <span id="dv-status" style="font-size:.76rem;"></span>
+      <button onclick="closeDocViewer()" style="background:none;border:none;color:var(--sub);font-size:1.2rem;cursor:pointer;padding:.2rem .5rem;line-height:1;">✕</button>
+    </div>
+    <!-- meta row -->
+    <div style="padding:.6rem 1.25rem;border-bottom:1px solid var(--border);display:flex;gap:1.25rem;flex-wrap:wrap;font-size:.78rem;color:var(--sub);">
+      <span>Domain: <strong id="dv-domain" style="color:var(--text);">—</strong></span>
+      <span>Type: <strong id="dv-type" style="color:var(--text);">—</strong></span>
+      <span>Verified: <strong id="dv-verified" style="color:var(--text);">—</strong></span>
+      <span>Chunks: <strong id="dv-chunks" style="color:var(--text);">—</strong></span>
+      <span id="dv-repaired-row" style="display:none;">Repaired: <strong id="dv-repaired" style="color:var(--amber);">—</strong></span>
+    </div>
+    <!-- content -->
+    <div id="dv-loading" style="padding:2rem;text-align:center;color:var(--sub);display:none;">Loading content…</div>
+    <div id="dv-error" style="padding:2rem;text-align:center;color:var(--red);display:none;"></div>
+    <div id="dv-content" style="flex:1;overflow-y:auto;padding:1.25rem;font-family:var(--mono);font-size:.79rem;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word;"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════════════
+const API = window.PANEL_API || 'http://localhost:4000/api'
+const USER = window.PANEL_USER || { name:'Zach Goodbody', initials:'ZG', id:'zach', role:'owner' }
+
+let state = {
+  queue:      [],
+  history:    [],
+  activity:   [],
+  clients:    [],
+  docs:       [],
+  system:     {},
+  decisions:  {},     // id → {action,note,timestamp}
+  patterns:   {},
+  selected:   new Set(),
+  filter:     'all',
+  expanded:   new Set(),
+  itarConfirmed: new Set(),
+  modalTarget: null,
+  features: {
+    auto_approve: false,
+    web_search: true,
+    email_notify: true,
+    anvil_patch: true,
+    dry_run: false,
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('topbar-avatar').textContent = USER.initials
+  document.getElementById('topbar-name').textContent   = USER.name.split(' ')[0]
+  loadData()
+  setInterval(loadData, 30000)
+})
+
+// ═══════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════
+async function loadData() {
+  try {
+    const data = await apiFetch('/review/queue')
+    state.queue    = data.pending   || []
+    state.history  = data.completed || []
+    state.activity = data.activity  || []
+    state.system   = data.system    || {}
+    state.clients  = data.clients   || []
+    state.patterns = data.patterns  || {}
+    updateAll()
+  } catch(e) {
+    loadDemoData()
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// DOCUMENTS LIBRARY
+// ═══════════════════════════════════════════════════════════
+async function loadDocs() {
+  try {
+    const data = await apiFetch('/docs')
+    state.docs = data.docs || []
+    renderDocs(state.docs)
+    populateDocsFilters(state.docs)
+    updateSidebar()
+  } catch(e) {
+    const tbody = document.getElementById('docs-tbody')
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red);padding:2rem;">Could not load documents — is FORGE running?</td></tr>`
+  }
+}
+
+function populateDocsFilters(docs) {
+  const domainSel = document.getElementById('docs-filter-domain')
+  if (!domainSel) return
+  const current = domainSel.value
+  const domains = [...new Set(docs.map(d => d.domain).filter(Boolean).sort())]
+  domainSel.innerHTML = '<option value="">All domains</option>' +
+    domains.map(d => `<option value="${escHtml(d)}"${d===current?' selected':''}>${escHtml(d)}</option>`).join('')
+}
+
+function qBadge(score) {
+  const n = score || 0
+  if (n >= 80) return `<span style="display:inline-block;padding:.1rem .4rem;border-radius:3px;font-size:.78rem;font-family:var(--mono);background:var(--green-lo);color:var(--green);">${n}</span>`
+  if (n >= 60) return `<span style="display:inline-block;padding:.1rem .4rem;border-radius:3px;font-size:.78rem;font-family:var(--mono);background:var(--amber-lo);color:var(--amber);">${n}</span>`
+  return `<span style="display:inline-block;padding:.1rem .4rem;border-radius:3px;font-size:.78rem;font-family:var(--mono);background:var(--red-lo);color:var(--red);">${n}</span>`
+}
+
+function statusChip(status) {
+  const map = { verified:'var(--green)', repaired:'var(--amber)', pending:'var(--sub)', failed:'var(--red)' }
+  const col = map[status] || 'var(--sub)'
+  return `<span style="font-size:.74rem;color:${col};">● ${escHtml(status||'—')}</span>`
+}
+
+function renderDocs(docs) {
+  const tbody = document.getElementById('docs-tbody')
+  if (!tbody) return
+  const countEl = document.getElementById('docs-count')
+  if (countEl) countEl.textContent = `${docs.length} document${docs.length!==1?'s':''}`
+  if (!docs.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--sub);padding:2rem;">No indexed documents found. Drop files into FORGE\'s staging folder to get started.</td></tr>'
+    return
+  }
+  // Store the filtered list for index lookups from onclick handlers
+  renderDocs._current = docs
+  tbody.innerHTML = docs.map((d, i) => `
+    <tr onclick="viewDocByIndex(${i})" style="cursor:pointer;" title="Click to read document">
+      <td style="font-family:var(--mono);font-size:.78rem;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        ${d.itar_sensitive ? '<span style="color:var(--red);font-size:.65rem;margin-right:.3rem;font-weight:700;">ITAR</span>' : ''}${escHtml(d.name||d.path)}
+      </td>
+      <td style="font-size:.8rem;">${escHtml(d.domain||'—')}</td>
+      <td style="font-size:.8rem;">${escHtml(d.doc_type||'—')}</td>
+      <td style="text-align:center;">${qBadge(d.quality_score)}</td>
+      <td>${statusChip(d.status)}</td>
+      <td style="font-size:.76rem;color:var(--sub);">${d.last_verified ? timeAgo(d.last_verified) : '—'}</td>
+      <td style="text-align:center;"><button onclick="event.stopPropagation();viewDocByIndex(${i})"
+        style="background:none;border:1px solid var(--border);color:var(--sub);border-radius:3px;padding:.2rem .5rem;cursor:pointer;font-size:.75rem;">Read</button></td>
+    </tr>`).join('')
+}
+
+function viewDocByIndex(i) {
+  const doc = renderDocs._current && renderDocs._current[i]
+  if (doc) viewDoc(doc, doc.path)
+}
+
+function filterDocs() {
+  const q      = (document.getElementById('docs-search')?.value  || '').toLowerCase()
+  const domain = document.getElementById('docs-filter-domain')?.value || ''
+  const status = document.getElementById('docs-filter-status')?.value || ''
+  const filtered = state.docs.filter(d => {
+    if (domain && d.domain !== domain) return false
+    if (status && d.status !== status) return false
+    if (q && !((d.name||'') + (d.path||'') + (d.domain||'')).toLowerCase().includes(q)) return false
+    return true
+  })
+  renderDocs(filtered)
+}
+
+function viewDoc(meta, path) {
+  const overlay = document.getElementById('doc-viewer-overlay')
+  overlay.style.display = 'flex'
+
+  document.getElementById('dv-title').textContent     = meta.name || path
+  document.getElementById('dv-domain').textContent    = meta.domain || '—'
+  document.getElementById('dv-type').textContent      = meta.doc_type || '—'
+  document.getElementById('dv-verified').textContent  = meta.last_verified ? timeAgo(meta.last_verified) : '—'
+  document.getElementById('dv-chunks').textContent    = meta.chunk_count || '—'
+  document.getElementById('dv-quality').innerHTML     = qBadge(meta.quality_score)
+  document.getElementById('dv-status').innerHTML      = statusChip(meta.status)
+  const itarEl = document.getElementById('dv-itar')
+  itarEl.style.display = meta.itar_sensitive ? '' : 'none'
+  const repEl = document.getElementById('dv-repaired-row')
+  if (meta.last_repaired) {
+    repEl.style.display = ''
+    document.getElementById('dv-repaired').textContent = timeAgo(meta.last_repaired)
+  } else {
+    repEl.style.display = 'none'
+  }
+
+  const contentEl = document.getElementById('dv-content')
+  const loadingEl = document.getElementById('dv-loading')
+  const errorEl   = document.getElementById('dv-error')
+  contentEl.textContent = ''
+  loadingEl.style.display = 'block'
+  errorEl.style.display   = 'none'
+
+  apiFetch(`/docs/content?path=${encodeURIComponent(path)}`)
+    .then(r => {
+      loadingEl.style.display = 'none'
+      if (r.error) {
+        errorEl.style.display = 'block'
+        errorEl.textContent = `Cannot read file: ${r.error}`
+      } else {
+        contentEl.textContent = r.content || '(empty file)'
+      }
+    })
+    .catch(() => {
+      loadingEl.style.display = 'none'
+      errorEl.style.display = 'block'
+      errorEl.textContent = 'Failed to fetch document content.'
+    })
+}
+
+function closeDocViewer() {
+  document.getElementById('doc-viewer-overlay').style.display = 'none'
+}
+
+function updateAll() {
+  updateTopbar()
+  updateSidebar()
+  updateDashboard()
+  renderQueue()
+  renderClients()
+  renderPatterns()
+  renderHistory()
+}
+
+function updateTopbar() {
+  const pending = state.queue.filter(i => !state.decisions[i.id]).length
+  const badge = document.getElementById('pending-badge')
+  badge.textContent = pending === 0 ? '✓ All clear' : `${pending} pending`
+  badge.className = 'pending-badge' + (pending === 0 ? ' clear' : '')
+
+  const sys = state.system
+  setPill('pill-forge', sys.forge_online !== false ? 'online' : 'offline', sys.forge_status || 'FORGE')
+  setPill('pill-anvil', sys.anvil_online !== false ? 'online' : 'offline', sys.anvil_status || 'ANVIL')
+  document.getElementById('last-run-time').textContent = sys.last_run || '—'
+}
+
+function setPill(id, status, label) {
+  const el = document.getElementById(id)
+  el.className = `sys-pill ${status}`
+  el.innerHTML = `<span class="pill-dot"></span>${label}`
+}
+
+function updateSidebar() {
+  const pending = state.queue.filter(i => !state.decisions[i.id]).length
+  const badge = document.getElementById('nav-badge-queue')
+  badge.textContent = pending
+  badge.style.display = pending > 0 ? '' : 'none'
+
+  const docsBadge = document.getElementById('nav-badge-docs')
+  if (docsBadge) {
+    docsBadge.textContent = state.docs.length
+    docsBadge.style.display = state.docs.length > 0 ? '' : 'none'
+  }
+
+  document.getElementById('sf-quality-val').textContent = state.system.avg_quality ? state.system.avg_quality + '/100' : '—'
+  const todayDecisions = Object.values(state.decisions).filter(d => {
+    if (!d.timestamp) return false
+    const today = new Date().toDateString()
+    return new Date(d.timestamp).toDateString() === today
+  }).length
+  document.getElementById('sf-decisions-val').textContent = todayDecisions
+}
+
+function updateDashboard() {
+  const pending = state.queue.filter(i => !state.decisions[i.id]).length
+  document.getElementById('ds-pending').textContent = pending
+  document.getElementById('ds-quality').textContent = state.system.avg_quality || '—'
+  document.getElementById('ds-decisions').textContent = Object.keys(state.decisions).length
+  document.getElementById('ds-patterns').textContent = (state.patterns.learned || 0)
+
+  // System cards
+  const sys = state.system
+  document.getElementById('forge-last-run').textContent = sys.forge_last_run || '—'
+  document.getElementById('forge-docs').textContent     = sys.forge_docs || '—'
+  document.getElementById('forge-repairs').textContent  = sys.forge_repairs || '—'
+  document.getElementById('forge-runs').textContent     = sys.forge_total_runs || '—'
+  document.getElementById('anvil-last-run').textContent = sys.anvil_last_run || '—'
+  document.getElementById('anvil-files').textContent    = sys.anvil_files || '—'
+  document.getElementById('anvil-issues').textContent   = sys.anvil_issues || '—'
+  document.getElementById('anvil-patches').textContent  = sys.anvil_patches || '—'
+
+  // Status pills
+  document.getElementById('forge-status-pill').className = sys.forge_online !== false ? 'pill pill-green' : 'pill pill-red'
+  document.getElementById('forge-status-pill').textContent = sys.forge_online !== false ? 'RUNNING' : 'OFFLINE'
+  document.getElementById('anvil-status-pill').className = sys.anvil_online !== false ? 'pill pill-blue' : 'pill pill-red'
+  document.getElementById('anvil-status-pill').textContent = sys.anvil_online !== false ? 'RUNNING' : 'OFFLINE'
+
+  // Sparklines
+  buildSparkline('forge-spark', sys.forge_quality_trend || [], 'amber')
+  buildSparkline('anvil-spark', sys.anvil_issue_trend || [], 'blue')
+
+  // Urgent items
+  const urgent = state.queue.filter(i => !state.decisions[i.id] && ['urgent','high'].includes(i.priority))
+  const urgentEl = document.getElementById('dash-urgent')
+  if (!urgent.length) {
+    urgentEl.innerHTML = `<div class="empty-state" style="padding:1.5rem;"><div class="empty-icon" style="font-size:1.5rem;">✅</div><div class="empty-title" style="font-size:.88rem;">Queue is clear</div></div>`
+  } else {
+    urgentEl.innerHTML = urgent.slice(0,3).map(item => `
+      <div style="display:flex;align-items:center;gap:.65rem;padding:.55rem 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;" onclick="showPage('queue');setTimeout(()=>openItem('${item.id}'),200)">
+        <span class="pill ${item.priority === 'urgent' ? 'pill-red' : 'pill-amber'}" style="flex-shrink:0;">${item.priority.toUpperCase()}</span>
+        <span style="font-size:.83rem;color:var(--text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHtml(item.title)}</span>
+        <span style="font-family:var(--mono);font-size:.6rem;color:var(--dim);">${item.source?.toUpperCase()}</span>
+      </div>`).join('')
+  }
+
+  // Activity
+  document.getElementById('dash-activity').innerHTML = state.activity.slice(0,8).map(a => `
+    <div class="activity-item">
+      <span class="act-time">${a.time || ''}</span>
+      <span class="act-icon">${actIcon(a.type)}</span>
+      <span class="act-text">${buildActText(a)}</span>
+    </div>`).join('') || '<div class="activity-item"><span class="act-text">No activity yet</span></div>'
+}
+
+function buildSparkline(id, values, color) {
+  const el = document.getElementById(id)
+  if (!values.length) { el.innerHTML = ''; return }
+  const max = Math.max(...values, 1)
+  el.innerHTML = values.map(v => `<div class="spark-bar ${color}" style="height:${Math.max(15,Math.round((v/max)*100))}%"></div>`).join('')
+}
+
+// ═══════════════════════════════════════════════════════════
+// QUEUE RENDER
+// ═══════════════════════════════════════════════════════════
+function renderQueue() {
+  const container = document.getElementById('queue-container')
+  let items = state.filter === 'done'
+    ? state.history.slice(0,30)
+    : state.queue.filter(i => !state.decisions[i.id] || state.filter === 'done')
+
+  if (state.filter === 'urgent') items = items.filter(i => ['urgent','high'].includes(i.priority))
+  if (state.filter === 'forge')  items = items.filter(i => i.source === 'forge')
+  if (state.filter === 'anvil')  items = items.filter(i => i.source === 'anvil')
+  if (state.filter === 'itar')   items = items.filter(i => i.itar_flagged)
+
+  if (!items.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">Nothing here</div><div style="font-size:.85rem;color:var(--dim);">FORGE and ANVIL are running. You'll see items here when they need your approval.</div></div>`
+    return
+  }
+
+  container.innerHTML = items.map(item => buildItemCard(item)).join('')
+}
+
+function buildItemCard(item) {
+  const done     = state.decisions[item.id]
+  const expanded = state.expanded.has(item.id)
+  const selected = state.selected.has(item.id)
+  const priority = item.priority || 'medium'
+  const src      = item.source || 'forge'
+
+  const srcLabel = src === 'forge' ? 'FRGE' : 'ANVL'
+  const srcClass = src === 'forge' ? 'src-forge' : 'src-anvil'
+  const srcPill  = src === 'forge' ? 'pill-forge' : 'pill-anvil'
+  const priPill  = { urgent:'pill-red', high:'pill-amber', medium:'pill-blue', low:'pill-dim' }[priority] || 'pill-dim'
+
+  const itemClass = [
+    'review-item',
+    `priority-${priority}`,
+    done ? 'status-done' : '',
+    selected ? 'selected' : '',
+  ].filter(Boolean).join(' ')
+
+  const expandedBody = expanded ? buildExpandedBody(item, done) : ''
+
+  return `
+  <div class="${itemClass}" id="item-${item.id}">
+    <div class="item-head" onclick="toggleItem('${item.id}')">
+      <div class="item-check ${selected ? 'checked':''}" onclick="event.stopPropagation();toggleSelect('${item.id}')"></div>
+      <div class="item-source-icon ${srcClass}">${srcLabel}</div>
+      <div class="item-meta">
+        <div class="item-title">${escHtml(item.title)}</div>
+        <div class="item-tags">
+          <span class="pill ${priPill}">${priority.toUpperCase()}</span>
+          <span class="pill ${srcPill}">${src.toUpperCase()} ${item.issue_type ? '· ' + item.issue_type : ''}</span>
+          ${item.itar_flagged ? '<span class="pill pill-red">⚠ ITAR</span>' : ''}
+          ${done ? `<span class="pill pill-green">${done.action.toUpperCase()}</span>` : ''}
+        </div>
+        <div class="item-file">${escHtml(item.file || item.doc || '')}</div>
+      </div>
+      <div class="item-head-right">
+        <span class="item-age">${item.age || ''}</span>
+        <span style="color:var(--dim);font-size:.8rem;">${expanded ? '▲' : '▼'}</span>
+      </div>
+    </div>
+    <div class="item-body ${expanded ? 'open' : ''}" id="body-${item.id}">
+      ${expandedBody}
+    </div>
+  </div>`
+}
+
+function buildExpandedBody(item, done) {
+  const isItarBlocked = item.itar_flagged && !state.itarConfirmed.has(item.id)
+  const conversation  = buildConversation(item)
+  const patterns      = buildPatternHistory(item)
+
+  return `
+    <!-- Plain English -->
+    <div class="plain-box">
+      <div class="plain-label">What happened</div>
+      <div class="plain-text">${buildPlainText(item)}</div>
+    </div>
+
+    ${item.itar_flagged ? `
+    <div class="itar-gate">
+      <span class="itar-icon">🔒</span>
+      <div class="itar-text">
+        <strong>ITAR-Sensitive Document</strong><br>
+        This item involves export-controlled technical data. You must confirm you are authorized to review this before taking action.
+        <label class="itar-confirm">
+          <input type="checkbox" ${state.itarConfirmed.has(item.id) ? 'checked':''}
+            onchange="confirmItar('${item.id}',this.checked);event.stopPropagation()">
+          I am authorized to review this ITAR-controlled item
+        </label>
+      </div>
+    </div>` : ''}
+
+    <!-- Content tabs -->
+    <div class="content-tabs" id="tabs-${item.id}">
+      <button class="ctab active" onclick="switchCtab(this,'ct-explain-${item.id}')">Explanation</button>
+      ${item.content_before ? `<button class="ctab" onclick="switchCtab(this,'ct-before-${item.id}')">Before</button>` : ''}
+      ${item.content_after  ? `<button class="ctab" onclick="switchCtab(this,'ct-after-${item.id}')">After</button>` : ''}
+      ${item.diff           ? `<button class="ctab" onclick="switchCtab(this,'ct-diff-${item.id}')">Changes</button>` : ''}
+      <button class="ctab" onclick="switchCtab(this,'ct-reason-${item.id}')">AI Reasoning</button>
+      <button class="ctab" onclick="switchCtab(this,'ct-thread-${item.id}')">Thread</button>
+      ${patterns ? `<button class="ctab" onclick="switchCtab(this,'ct-pattern-${item.id}')">History</button>` : ''}
+    </div>
+
+    <div id="ct-explain-${item.id}" class="ctab-panel active">
+      ${buildIssuesList(item)}
+    </div>
+    ${item.content_before ? `
+    <div id="ct-before-${item.id}" class="ctab-panel">
+      <div class="content-block">${escHtml(item.content_before.slice(0,1500))}</div>
+    </div>` : ''}
+    ${item.content_after ? `
+    <div id="ct-after-${item.id}" class="ctab-panel">
+      <div class="content-block">${escHtml(item.content_after.slice(0,1500))}</div>
+    </div>` : ''}
+    ${item.diff ? `
+    <div id="ct-diff-${item.id}" class="ctab-panel">
+      <div class="content-block code">${renderDiff(item.diff)}</div>
+    </div>` : ''}
+    <div id="ct-reason-${item.id}" class="ctab-panel">
+      <div class="reasoning-box">${buildReasoning(item)}</div>
+    </div>
+    <div id="ct-thread-${item.id}" class="ctab-panel">
+      <div class="thread">${conversation}</div>
+    </div>
+    ${patterns ? `
+    <div id="ct-pattern-${item.id}" class="ctab-panel">
+      ${patterns}
+    </div>` : ''}
+
+    <!-- Quick reply -->
+    <div class="quick-chips">
+      <button class="quick-chip" onclick="prefillReply('${item.id}','Why is this change needed?')">Why needed?</button>
+      <button class="quick-chip" onclick="prefillReply('${item.id}','Keep the original value — it was intentional.')">Keep original</button>
+      <button class="quick-chip" onclick="prefillReply('${item.id}','The source document may be outdated.')">Doc outdated</button>
+      <button class="quick-chip" onclick="prefillReply('${item.id}','This was set by engineering — do not change.')">Engineering decision</button>
+    </div>
+    <div class="reply-row">
+      <input class="reply-input" id="reply-${item.id}" placeholder="Ask a question or leave a note for the AI..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitReply('${item.id}')}">
+      <button class="btn btn-suggest btn-sm" onclick="submitReply('${item.id}')">Send</button>
+    </div>
+
+    <!-- Actions -->
+    ${done ? `
+    <div class="item-actions">
+      <div class="action-label">Decision recorded</div>
+      <span class="pill ${done.action==='approve'?'pill-green':done.action==='reject'?'pill-red':'pill-blue'}">
+        ${done.action==='approve'?'✓ Approved':done.action==='reject'?'✗ Rejected':'💬 Feedback sent'}
+      </span>
+      ${done.note ? `<span style="font-size:.82rem;color:var(--sub);margin-left:.5rem;">"${escHtml(done.note.slice(0,80))}"</span>` : ''}
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="undoDecision('${item.id}')">Undo</button>
+    </div>` : `
+    <div class="item-actions">
+      <div class="action-label">Your decision</div>
+      <button class="btn btn-approve ${isItarBlocked?'':''}${isItarBlocked?'" disabled onclick="showToast(\'Confirm ITAR authorization above first\')"':'" onclick="decide(\''+item.id+'\',\'approve\')"'}">✓ Approve</button>
+      <button class="btn btn-reject" onclick="openSuggestModal('${item.id}','reject')">✗ Reject</button>
+      <button class="btn btn-suggest" onclick="openSuggestModal('${item.id}','suggest')">💬 Ask / Suggest</button>
+    </div>`}
+  `
+}
+
+function buildPlainText(item) {
+  if (item.plain_explanation) return item.plain_explanation
+  const src = item.source || 'forge'
+  if (src === 'anvil') {
+    if (item.issue_type === 'contradiction')
+      return `<strong>ANVIL</strong> found a place where the software disagreed with your documentation. It proposed a fix. Review the change below — <strong>approve</strong> if it looks right, <strong>reject</strong> if not.`
+    return `<strong>ANVIL</strong> proposed a code change based on your documentation. Review it below.`
+  }
+  return `<strong>FORGE</strong> improved a document in your library. Take a look and approve if it reads correctly.`
+}
+
+function buildIssuesList(item) {
+  const issues = item.issues || []
+  if (!issues.length) return '<p style="font-size:.84rem;color:var(--sub);">No specific issues flagged — review the Before/After tabs.</p>'
+  return `<ul class="issues-list">` + issues.map(i => `
+    <li class="issue-item ${i.severity || 'info'}">
+      <span class="issue-icon">${i.severity==='error'?'🔴':i.severity==='warning'?'🟡':'ℹ️'}</span>
+      <span class="issue-msg">${escHtml(i.message)}</span>
+    </li>`).join('') + `</ul>`
+}
+
+function buildReasoning(item) {
+  if (item.ai_reasoning) return escHtml(item.ai_reasoning)
+  const src = (item.source||'forge').toUpperCase()
+  return `<strong>${src} decision:</strong> This item was flagged because ${
+    item.issue_type === 'contradiction' ? 'a value in the code contradicted the verified documentation.' :
+    item.issue_type === 'missing_impl'  ? 'the documentation describes a feature with no corresponding code.' :
+    item.issue_type === 'drift'         ? 'the documentation was updated since the code was last verified.' :
+    item.issue_type === 'repair'        ? 'the document had missing or incorrect sections that were improved.' :
+    'a quality improvement was identified.'
+  } Confidence: ${item.confidence || 'medium'}. Doc quality at time of check: ${item.doc_quality || '—'}.`
+}
+
+function buildConversation(item) {
+  const msgs = item.thread || []
+  const srcAv = item.source === 'anvil' ? 'av-anvil' : 'av-forge'
+  const srcLabel = item.source === 'anvil' ? 'ANVIL' : 'FORGE'
+  const userInitials = USER.initials
+
+  let html = `
+    <div class="thread-msg">
+      <div class="thread-avatar ${srcAv}">${srcLabel.slice(0,2)}</div>
+      <div class="thread-body">
+        <div class="thread-who">${srcLabel} · ${item.age || 'just now'}</div>
+        <div class="thread-bubble">${buildPlainText(item)}</div>
+      </div>
+    </div>`
+
+  msgs.forEach(msg => {
+    const isHuman = msg.from === 'human'
+    html += `
+    <div class="thread-msg">
+      <div class="thread-avatar ${isHuman ? 'av-human' : 'av-ai'}">${isHuman ? userInitials : 'AI'}</div>
+      <div class="thread-body">
+        <div class="thread-who">${isHuman ? USER.name.split(' ')[0] : 'AI'} · ${msg.time || ''}</div>
+        <div class="thread-bubble ${isHuman ? 'human-msg' : ''}">${escHtml(msg.text)}</div>
+      </div>
+    </div>`
+  })
+
+  return html
+}
+
+function buildPatternHistory(item) {
+  const history = item.pattern_history || []
+  if (!history.length) return ''
+  return `<div>` + history.map(h => `
+    <div class="pattern-entry">
+      <span class="pat-date">${h.date || ''}</span>
+      <span class="pat-text">${escHtml(h.description)}</span>
+      <span class="pat-outcome">
+        <span class="pill ${h.outcome==='approved'?'pill-green':h.outcome==='rejected'?'pill-red':'pill-dim'}">${h.outcome}</span>
+      </span>
+    </div>`).join('') + `</div>`
+}
+
+// ═══════════════════════════════════════════════════════════
+// DECISIONS
+// ═══════════════════════════════════════════════════════════
+async function decide(itemId, action, note = '') {
+  const item = state.queue.find(i => i.id === itemId)
+  if (item?.itar_flagged && !state.itarConfirmed.has(itemId) && action === 'approve') {
+    showToast('⚠ Confirm ITAR authorization before approving')
+    return
+  }
+
+  try {
+    await apiFetch('/review/decide', {
+      method: 'POST',
+      body: { item_id: itemId, action, note, reviewed_by: USER.id }
+    })
+  } catch(e) { /* optimistic */ }
+
+  state.decisions[itemId] = { action, note, timestamp: new Date().toISOString() }
+
+  if (item) {
+    state.history.unshift({ ...item, action, reviewed_by: USER.name, reviewed_at: 'Just now' })
+    state.queue = state.queue.filter(i => i.id !== itemId)
+  }
+
+  const msgs = { approve:'✅ Approved — change will go live', reject:'✗ Rejected — reverted', suggest:'💬 Feedback sent to AI' }
+  showToast(msgs[action] || 'Done')
+  renderQueue()
+  updateTopbar()
+  updateSidebar()
+  updateDashboard()
+}
+
+function undoDecision(itemId) {
+  delete state.decisions[itemId]
+  const hist = state.history.find(i => i.id === itemId)
+  if (hist) {
+    state.queue.unshift(hist)
+    state.history = state.history.filter(i => i.id !== itemId)
+  }
+  showToast('Decision undone')
+  renderQueue()
+  updateTopbar()
+  updateSidebar()
+}
+
+// Batch
+function batchAction(action) {
+  const ids = [...state.selected]
+  if (!ids.length) return
+  if (!confirm(`${action === 'approve' ? 'Approve' : 'Reject'} ${ids.length} selected items?`)) return
+  ids.forEach(id => decide(id, action))
+  clearSelection()
+}
+
+function clearSelection() {
+  state.selected.clear()
+  document.getElementById('batch-bar').classList.remove('visible')
+  renderQueue()
+}
+
+function toggleSelect(id) {
+  if (state.selected.has(id)) state.selected.delete(id)
+  else state.selected.add(id)
+  const count = state.selected.size
+  const bar = document.getElementById('batch-bar')
+  bar.classList.toggle('visible', count > 0)
+  document.getElementById('batch-count-label').textContent = `${count} selected`
+  const card = document.getElementById(`item-${id}`)
+  if (card) card.classList.toggle('selected', state.selected.has(id))
+  const check = card?.querySelector('.item-check')
+  if (check) check.classList.toggle('checked', state.selected.has(id))
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════
+function openSuggestModal(itemId, mode) {
+  state.modalTarget = { itemId, mode }
+  const item = state.queue.find(i => i.id === itemId) || {}
+  const titles = { reject:'Why are you rejecting this?', suggest:'Ask a Question or Suggest an Improvement' }
+  document.getElementById('modal-title-text').textContent = titles[mode] || titles.suggest
+  document.getElementById('modal-context').textContent = item.title || ''
+  document.getElementById('modal-input').value = ''
+  document.getElementById('suggest-modal').classList.add('open')
+  setTimeout(() => document.getElementById('modal-input').focus(), 100)
+}
+
+function closeModal() {
+  document.getElementById('suggest-modal').classList.remove('open')
+  state.modalTarget = null
+}
+
+function submitModal() {
+  if (!state.modalTarget) return
+  const note = document.getElementById('modal-input').value.trim()
+  const { itemId, mode } = state.modalTarget
+  if (!note && mode !== 'approve') {
+    document.getElementById('modal-input').focus()
+    return
+  }
+  closeModal()
+  decide(itemId, mode === 'reject' ? 'reject' : 'suggest', note)
+}
+
+function addChip(text) {
+  const ta = document.getElementById('modal-input')
+  ta.value = ta.value ? ta.value + ' ' + text : text
+  ta.focus()
+}
+
+document.getElementById('suggest-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('suggest-modal')) closeModal()
+})
+
+// Reply inline
+function submitReply(itemId) {
+  const input = document.getElementById(`reply-${itemId}`)
+  const text = input?.value.trim()
+  if (!text) return
+  input.value = ''
+  decide(itemId, 'suggest', text)
+}
+
+function prefillReply(itemId, text) {
+  const input = document.getElementById(`reply-${itemId}`)
+  if (input) { input.value = text; input.focus() }
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  const page = document.getElementById(`page-${name}`)
+  if (page) page.classList.add('active')
+  const nav = document.querySelector(`[data-page="${name}"]`)
+  if (nav) nav.classList.add('active')
+  if (name === 'docs') loadDocs()
+}
+
+function toggleItem(id) {
+  if (state.expanded.has(id)) state.expanded.delete(id)
+  else { state.expanded.clear(); state.expanded.add(id) }
+  renderQueue()
+  if (state.expanded.has(id)) {
+    setTimeout(() => {
+      document.getElementById(`item-${id}`)?.scrollIntoView({ behavior:'smooth', block:'start' })
+    }, 100)
+  }
+}
+
+function openItem(id) {
+  state.expanded.clear()
+  state.expanded.add(id)
+  renderQueue()
+}
+
+function setFilter(filter, btn) {
+  state.filter = filter
+  state.expanded.clear()
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'))
+  btn.classList.add('active')
+  renderQueue()
+}
+
+function switchCtab(btn, panelId) {
+  const tabs = btn.closest('.content-tabs')
+  tabs?.querySelectorAll('.ctab').forEach(t => t.classList.remove('active'))
+  btn.classList.add('active')
+  // Find parent item body
+  const body = tabs?.parentElement
+  body?.querySelectorAll('.ctab-panel').forEach(p => p.classList.remove('active'))
+  document.getElementById(panelId)?.classList.add('active')
+}
+
+function confirmItar(id, checked) {
+  if (checked) state.itarConfirmed.add(id)
+  else state.itarConfirmed.delete(id)
+  // Re-render just this item's action buttons
+  const actionEl = document.querySelector(`#item-${id} .item-actions`)
+  if (actionEl) {
+    const approveBtn = actionEl.querySelector('.btn-approve')
+    if (approveBtn) {
+      if (checked) {
+        approveBtn.removeAttribute('disabled')
+        approveBtn.onclick = () => decide(id, 'approve')
+      } else {
+        approveBtn.setAttribute('disabled', '')
+        approveBtn.onclick = () => showToast('Confirm ITAR authorization above first')
+      }
+    }
+  }
+}
+
+function toggleFeature(el, key) {
+  el.classList.toggle('on')
+  state.features[key] = el.classList.contains('on')
+  showToast(`${key.replace(/_/g,' ')} ${state.features[key] ? 'enabled' : 'disabled'}`)
+  apiFetch('/system/feature', { method:'POST', body: { key, value: state.features[key] } }).catch(()=>{})
+}
+
+function triggerRun(system) {
+  apiFetch(`/system/run/${system}`, { method:'POST' }).catch(()=>{})
+  showToast(`▶ Triggered ${system.toUpperCase()} run`)
+}
+
+function saveSettings() {
+  showToast('Settings saved')
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER: CLIENTS, PATTERNS, HISTORY
+// ═══════════════════════════════════════════════════════════
+function renderClients() {
+  const el = document.getElementById('clients-list')
+  if (!state.clients.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🏭</div><div class="empty-title">No clients configured yet</div></div>`
+    return
+  }
+  el.innerHTML = state.clients.map(c => `
+    <div class="client-card">
+      <div class="client-head">
+        <div class="client-avatar">${c.name.slice(0,2).toUpperCase()}</div>
+        <div>
+          <div class="client-name">${escHtml(c.name)}</div>
+          <div class="client-tier">${c.tier?.toUpperCase() || 'STARTER'} · ${c.id}</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:.5rem;">
+          <span class="pill ${c.online ? 'pill-green' : 'pill-dim'}">${c.online ? 'ONLINE' : 'OFFLINE'}</span>
+          <span class="pill pill-amber">${c.pending || 0} pending</span>
+        </div>
+      </div>
+      <div class="client-body">
+        <div class="client-metric"><div class="client-metric-val" style="color:var(--amber)">${c.doc_quality || '—'}</div><div class="client-metric-key">Doc Quality</div></div>
+        <div class="client-metric"><div class="client-metric-val" style="color:var(--green)">${c.docs_indexed || 0}</div><div class="client-metric-key">Docs Indexed</div></div>
+        <div class="client-metric"><div class="client-metric-val" style="color:var(--blue)">${c.queries_week || 0}</div><div class="client-metric-key">Queries/Week</div></div>
+        <div class="client-metric"><div class="client-metric-val" style="color:var(--purple)">${c.open_ncrs || 0}</div><div class="client-metric-key">Open NCRs</div></div>
+      </div>
+    </div>`).join('')
+}
+
+function renderPatterns() {
+  const p = state.patterns
+  document.getElementById('pat-total-approved').textContent = p.total_approved || 0
+  document.getElementById('pat-total-rejected').textContent = p.total_rejected || 0
+  document.getElementById('pat-patterns-learned').textContent = p.learned || 0
+
+  const fixTypes = p.fix_types || [
+    { label:'Safety warning added', count:8, color:'var(--red)' },
+    { label:'Timeout corrected', count:5, color:'var(--amber)' },
+    { label:'Missing section added', count:12, color:'var(--blue)' },
+    { label:'Spec value corrected', count:3, color:'var(--purple)' },
+    { label:'Format improved', count:7, color:'var(--green)' },
+  ]
+  const maxCount = Math.max(...fixTypes.map(f => f.count), 1)
+  document.getElementById('pat-fix-types').innerHTML = fixTypes.map(f => `
+    <div class="pattern-bar-item">
+      <span class="pbar-label">${escHtml(f.label)}</span>
+      <div class="pbar-track"><div class="pbar-value" style="width:${Math.round(f.count/maxCount*100)}%;background:${f.color||'var(--amber)'};"></div></div>
+      <span class="pbar-count">${f.count}</span>
+    </div>`).join('')
+
+  const rates = p.approval_rates || [
+    { label:'FORGE Doc Repairs', rate:94, color:'var(--amber)' },
+    { label:'ANVIL Code Fixes', rate:78, color:'var(--blue)' },
+    { label:'ITAR Items', rate:91, color:'var(--red)' },
+  ]
+  document.getElementById('pat-approval-rates').innerHTML = rates.map(r => `
+    <div class="pattern-bar-item">
+      <span class="pbar-label">${escHtml(r.label)}</span>
+      <div class="pbar-track"><div class="pbar-value" style="width:${r.rate}%;background:${r.color};"></div></div>
+      <span class="pbar-count">${r.rate}%</span>
+    </div>`).join('')
+
+  const gaps = p.doc_gaps || []
+  document.getElementById('pat-gaps').innerHTML = gaps.length
+    ? gaps.map(g => `<div class="pattern-bar-item"><span class="pbar-label">"${escHtml(g.query)}"</span><span class="pbar-count" style="color:var(--red);">${g.count}x</span></div>`).join('')
+    : '<p style="font-size:.83rem;color:var(--sub);">No significant gaps detected this period.</p>'
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('history-tbody')
+  const all = [...state.history, ...Object.entries(state.decisions).map(([id,d]) => ({ id, ...d }))]
+  if (!all.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--dim);padding:2rem;">No decisions recorded yet</td></tr>`
+    return
+  }
+  tbody.innerHTML = all.slice(0,50).map(item => {
+    const act = item.action || item.decision || '—'
+    const col = act === 'approve' ? 'var(--green)' : act === 'reject' ? 'var(--red)' : 'var(--blue)'
+    return `<tr>
+      <td class="primary" style="font-family:var(--mono);font-size:.72rem;">${item.reviewed_at || timeAgo(item.timestamp) || '—'}</td>
+      <td class="primary">${escHtml(item.title || item.id || '—')}</td>
+      <td><span class="pill ${item.source==='anvil'?'pill-anvil':'pill-forge'}">${(item.source||'forge').toUpperCase()}</span></td>
+      <td><span style="color:${col};font-weight:600;font-size:.82rem;">${act.toUpperCase()}</span></td>
+      <td style="font-size:.8rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(item.note || '—')}</td>
+    </tr>`
+  }).join('')
+}
+
+// ═══════════════════════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════════════════════
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: { 'Content-Type':'application/json', ...(opts.headers||{}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+function renderDiff(diff) {
+  return (diff||'').split('\n').map(l => {
+    if (l.startsWith('+') && !l.startsWith('+++')) return `<span class="diff-add">${escHtml(l)}</span>`
+    if (l.startsWith('-') && !l.startsWith('---')) return `<span class="diff-rem">${escHtml(l)}</span>`
+    return `<span class="diff-ctx">${escHtml(l)}</span>`
+  }).join('')
+}
+function actIcon(t) {
+  const m = { repair_accepted:'📝', passed_verification:'✅', contradiction:'⚠️', held_for_review:'📋', approved_by_human:'✅', rejected_by_human:'✗', committed:'💾', missing_impl:'❓', pattern_learned:'🧠' }
+  return m[t] || '📡'
+}
+function buildActText(a) {
+  const src = `<strong>${a.source==='anvil'?'ANVIL':'FORGE'}</strong>`
+  const file = a.file ? ` on <strong>${escHtml(a.file)}</strong>` : ''
+  const m = {
+    repair_accepted:`${src} improved a document${file}`,
+    passed_verification:`${src} verified a document${file} — score ${a.score||''}`,
+    contradiction:`${src} found a code contradiction${file}`,
+    held_for_review:`${src} sent an item for your review${file}`,
+    approved_by_human:`You approved a change${file}`,
+    rejected_by_human:`You rejected a change${file}`,
+    committed:`${src} committed a fix${file}`,
+    pattern_learned:`${src} learned a new repair pattern`,
+    missing_impl:`${src} found a missing implementation${file}`,
+  }
+  return m[a.type] || `${src} completed a task${file}`
+}
+function timeAgo(iso) {
+  if (!iso) return ''
+  const s = (Date.now() - new Date(iso).getTime()) / 1000
+  if (s < 120)    return 'Just now'
+  if (s < 3600)   return `${Math.floor(s/60)}m ago`
+  if (s < 86400)  return `${Math.floor(s/3600)}h ago`
+  return `${Math.floor(s/86400)}d ago`
+}
+function showToast(msg, ms=3000) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  setTimeout(() => t.classList.remove('show'), ms)
+}
+
+// ═══════════════════════════════════════════════════════════
+// DEMO DATA
+// ═══════════════════════════════════════════════════════════
+function loadDemoData() {
+  state.system = {
+    forge_online: true, forge_status: 'FORGE', forge_last_run: '9:02 AM', forge_docs: 47, forge_repairs: 12, forge_total_runs: 84,
+    anvil_online: true, anvil_status: 'ANVIL', anvil_last_run: '8:30 AM', anvil_files: 183, anvil_issues: 7, anvil_patches: 4,
+    avg_quality: 84, last_run: '9:02 AM',
+    forge_quality_trend: [72,75,78,80,81,83,84,85,84,84],
+    anvil_issue_trend: [12,9,8,11,7,6,8,7,6,7],
+  }
+  state.queue = [
+    {
+      id:'q1', source:'anvil', priority:'urgent', issue_type:'contradiction',
+      title:'NCR disposition timeout doesn\'t match the policy',
+      file:'src/api/routes.ts — /ncr/triage', age:'45 min ago', itar_flagged:false,
+      doc_quality:88, confidence:'high',
+      plain_explanation:'Your <strong>NCR Policy (SOP-Q-003)</strong> says dispositions must happen within <strong>24 hours</strong>. The software had a 48-hour timeout. ANVIL changed it to 24 hours to match. Does 24 hours look right?',
+      issues:[{severity:'error',message:'Timeout: SOP says 86400 seconds (24h), code had 172800 (48h). Changed to match.'}],
+      content_before:'const NCR_DISPOSITION_TIMEOUT = 172800 // 48 hours',
+      content_after: 'const NCR_DISPOSITION_TIMEOUT = 86400  // 24 hours — per SOP-Q-003',
+      diff:'--- a/routes.ts\n+++ b/routes.ts\n@@ -1 +1 @@\n-const NCR_DISPOSITION_TIMEOUT = 172800 // 48 hours\n+const NCR_DISPOSITION_TIMEOUT = 86400  // 24 hours — per SOP-Q-003',
+      ai_reasoning:'ANVIL bound routes.ts to SOP-Q-003 Section 4 (NCR Disposition Requirements) with 0.91 similarity. The spec extract found: "disposition must occur within 24 hours." The code constant was 172800 (48h). Delta: 86400 seconds. Auto-fixable: yes. Self-check confirmed the patch is correct and minimal.',
+      thread:[], pattern_history:[],
+    },
+    {
+      id:'q2', source:'forge', priority:'high', issue_type:'repair',
+      title:'Coolant procedure updated — safety warning added',
+      file:'docs/SOP-014-Coolant-Selection.md', age:'2 hrs ago', itar_flagged:false,
+      doc_quality:62, confidence:'high',
+      plain_explanation:'FORGE improved your coolant SOP. It added a missing <strong>PPE safety warning</strong> (safety glasses and nitrile gloves required) and fixed the disposal instruction to reference the MSDS sheet. The quality score went from 62 to 87.',
+      issues:[
+        {severity:'error',message:'Added missing PPE requirement: ⚠ WARNING: Wear safety glasses and nitrile gloves when handling coolant concentrate.'},
+        {severity:'warning',message:'Corrected disposal instruction: "Discard" → "Contain and dispose per MSDS Sheet SDS-COOL-001."'},
+      ],
+      content_before:'COOLANT SELECTION SOP\n\n1. Select coolant for material type.\n2. Mix per spec.\n3. Discard at end of week.',
+      content_after:'COOLANT SELECTION SOP\n\n⚠ WARNING: Wear safety glasses and nitrile gloves when handling coolant.\n\n1. Select coolant for material type (see Table 1).\n2. Mix per manufacturer spec — see MSDS.\n3. Contain and dispose per MSDS Sheet SDS-COOL-001.',
+      diff:'--- a/SOP-014.md\n+++ b/SOP-014.md\n@@ -1,4 +1,6 @@\n COOLANT SELECTION SOP\n \n-1. Select coolant for material type.\n-2. Mix per spec.\n-3. Discard at end of week.\n+⚠ WARNING: Wear safety glasses and nitrile gloves when handling coolant.\n+\n+1. Select coolant for material type (see Table 1).\n+2. Mix per manufacturer spec — see MSDS.\n+3. Contain and dispose per MSDS Sheet SDS-COOL-001.',
+      ai_reasoning:'FORGE verification detected 2 rule violations: [ERROR] safety_ppe_required — document mentions coolant handling but has no PPE requirement. [WARNING] msds_reference — chemical handling with no SDS reference. Quality score pre-repair: 62/100. Post-repair: 87/100. Repair attempt 1 of 3.',
+      thread:[], pattern_history:[{date:'2 weeks ago',description:'Similar PPE addition to SOP-012',outcome:'approved'},{date:'1 month ago',description:'MSDS reference added to SOP-009',outcome:'approved'}],
+    },
+    {
+      id:'q3', source:'forge', priority:'medium', issue_type:'repair',
+      title:'New operator onboarding checklist drafted',
+      file:'docs/training/operator-onboarding.md', age:'3 hrs ago', itar_flagged:false,
+      doc_quality:0, confidence:'medium',
+      plain_explanation:'FORGE noticed operators ask onboarding questions <strong>14 times a week</strong> with no documented answer. It drafted a new checklist from your existing SOPs. This is a <strong>new document</strong> — read it through before approving.',
+      issues:[{severity:'info',message:'New document created from gap analysis — 14 queries/week had no documented answer.'}],
+      content_after:'OPERATOR ONBOARDING CHECKLIST\n\nDay 1:\n□ Safety orientation\n□ PPE issued\n□ Emergency procedures reviewed\n\nWeek 1:\n□ SOP-001 through SOP-010 reviewed\n□ First supervised machine run\n□ Quality inspection training\n\nSign-off: _______ Date: _______',
+      thread:[], pattern_history:[],
+    },
+    {
+      id:'q4', source:'anvil', priority:'urgent', issue_type:'contradiction',
+      title:'ITAR export control flag — drawing access restriction',
+      file:'src/lib/storage.ts — getDownloadUrl()', age:'1 hr ago', itar_flagged:true,
+      doc_quality:91, confidence:'high',
+      plain_explanation:'ANVIL found that the download function doesn\'t check whether a document is ITAR-controlled before generating a download link. The <strong>ITAR compliance policy</strong> requires an authorization check. This item is <strong>ITAR-sensitive — you must confirm authorization before approving.</strong>',
+      issues:[{severity:'error',message:'getDownloadUrl() generates signed URLs for all documents without checking ITAR flag. Policy requires authorization check before serving controlled documents.'}],
+      content_before:'async getDownloadUrl(path) {\n  return this.supabase.storage.createSignedUrl(path, 3600)\n}',
+      content_after:'async getDownloadUrl(path, userId) {\n  const doc = await db.getDocumentByPath(path)\n  if (doc?.itar_sensitive) {\n    const authorized = await checkItarAuthorization(userId)\n    if (!authorized) throw new Error("ITAR authorization required")\n  }\n  return this.supabase.storage.createSignedUrl(path, 3600)\n}',
+      thread:[], pattern_history:[],
+    },
+  ]
+  state.activity = [
+    {time:'9:02',source:'anvil',type:'held_for_review',file:'routes.ts',icon:'📋'},
+    {time:'8:47',source:'forge',type:'repair_accepted',file:'SOP-014.md',icon:'📝'},
+    {time:'8:30',source:'forge',type:'passed_verification',file:'quality-manual.md',score:'91',icon:'✅'},
+    {time:'7:45',source:'anvil',type:'contradiction',file:'storage.ts',icon:'⚠️'},
+    {time:'7:15',source:'forge',type:'pattern_learned',icon:'🧠'},
+    {time:'6:00',source:'forge',type:'committed',file:'operator-onboarding.md',icon:'💾'},
+  ]
+  state.clients = [
+    {id:'acme-machine',name:'Acme Machine Co',tier:'starter',online:true,pending:2,doc_quality:84,docs_indexed:47,queries_week:312,open_ncrs:3},
+    {id:'precision-sd',name:'San Diego Precision',tier:'professional',online:true,pending:0,doc_quality:91,docs_indexed:128,queries_week:847,open_ncrs:1},
+  ]
+  state.patterns = { total_approved:47, total_rejected:6, learned:14 }
+  state.history = [
+    {id:'h1',title:'Setup sheet Rev C updated',source:'forge',action:'approve',reviewed_by:'Zach',reviewed_at:'Yesterday 2:14pm',note:''},
+    {id:'h2',title:'RPM limit in spindle.py',source:'anvil',action:'reject',reviewed_by:'Zach',reviewed_at:'Yesterday 10:30am',note:'This was set by the machine builder — do not change'},
+    {id:'h3',title:'Quality manual section 4',source:'forge',action:'suggest',reviewed_by:'Zach',reviewed_at:'2 days ago',note:'Check the AS9100 Rev D ref'},
+  ]
+  updateAll()
+}
+</script>
+</body>
+</html>
